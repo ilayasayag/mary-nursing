@@ -62,6 +62,7 @@
       on: 'On', off: 'Off', level: 'Level', lessons: 'lessons', of: 'of', timeUp: 'Time is up',
       readAloud: 'Read aloud', autoRead: 'Read questions aloud automatically', auto: 'Auto', speed2: 'Reading speed', slow: 'Slow', normal: 'Normal',
       testAudio: 'Test audio', audioHe: 'Hebrew: recorded clips', voiceFound: 'voice', voiceNone: 'no voice on this device',
+      autoVoice: 'Automatic', voicesTitle: 'Reading voice', voiceTip: 'For a natural, human voice, download a free better voice once: iPhone: Settings → Accessibility → Read & Speak (Spoken Content) → Voices → English → “Ava (Premium)” or “Samantha (Enhanced)”; Spanish → “Mónica (Enhanced)” or “Paulina (Enhanced)”. Mac: System Settings → Accessibility → Read & Speak → System voice → Manage voices. Then reopen the app and pick it here (★ = better voice).',
       noVoice: 'This device has no {l} voice. Add one in system settings → Accessibility → Spoken content.',
       saveTitle: 'Save your progress', localOnly: 'Progress is saved on this device, in two places. On iPhone, Safari can erase website data after a few weeks without use, so install the app or send yourself a copy every few days. To continue on another phone or computer, open that link there.',
       cloudOff: 'Cloud sign-in is not switched on yet (Ilay needs to add the Firebase settings).', cloudLoading: 'Connecting to cloud save…',
@@ -104,6 +105,7 @@
       on: 'Sí', off: 'No', level: 'Nivel', lessons: 'lecciones', of: 'de', timeUp: 'Se acabó el tiempo',
       readAloud: 'Leer en voz alta', autoRead: 'Leer las preguntas en voz alta automáticamente', auto: 'Auto', speed2: 'Velocidad de lectura', slow: 'Lenta', normal: 'Normal',
       testAudio: 'Probar audio', audioHe: 'Hebreo: grabaciones', voiceFound: 'voz', voiceNone: 'no hay voz en este dispositivo',
+      autoVoice: 'Automática', voicesTitle: 'Voz de lectura', voiceTip: 'Para una voz natural, descarga una vez una voz mejor (gratis): iPhone: Ajustes → Accesibilidad → Leer y hablar (Contenido leído) → Voces → Español → “Mónica (mejorada)” o “Paulina (mejorada)”; Inglés → “Ava (Premium)”. Mac: Ajustes del Sistema → Accesibilidad → Leer y hablar → Voz del sistema → Gestionar voces. Luego vuelve a abrir la app y elígela aquí (★ = voz mejor).',
       noVoice: 'Este dispositivo no tiene voz en {l}. Añádela en Ajustes → Accesibilidad → Contenido leído.',
       saveTitle: 'Guarda tu progreso', localOnly: 'El progreso se guarda en este dispositivo, en dos lugares. En iPhone, Safari puede borrar los datos de las webs tras unas semanas sin uso: instala la app o envíate una copia cada pocos días. Para seguir en otro móvil u ordenador, abre ese enlace allí.',
       cloudOff: 'El inicio de sesión en la nube aún no está activado (Ilay debe añadir los ajustes de Firebase).', cloudLoading: 'Conectando con la nube…',
@@ -161,10 +163,13 @@
   let voices = [];
   const loadVoices = () => { try { voices = speechSynthesis.getVoices(); } catch (e) { voices = []; } };
   loadVoices(); try { speechSynthesis.addEventListener('voiceschanged', loadVoices); } catch (e) { /* no speech API */ }
+  const voicesFor = lang => voices.filter(v => v.lang.replace('_', '-').toLowerCase().startsWith(lang) && !NOVELTY.test(v.name));
   function voiceFor(lang) {
-    /* on-device voices first: Chrome's network "Google" voices can stop mid-sentence */
-    const score = v => (v.localService ? 4 : 0) + (/Premium|Enhanced|Siri|Natural/.test(v.name) ? 2 : 0) + (/Samantha|Alex|Daniel|Karen|Moira|M[oó]nica|Paulina|Jorge|Juan|Diego|Carmit/.test(v.name) ? 2 : 0) + (/Google|Microsoft/.test(v.name) ? 1 : 0) - (NOVELTY.test(v.name) ? 9 : 0);
-    return voices.filter(v => v.lang.replace('_', '-').toLowerCase().startsWith(lang)).sort((a, b) => score(b) - score(a))[0] || null;
+    const pool = voicesFor(lang), chosen = (S.voice || {})[lang];
+    if (chosen) { const v = pool.find(x => x.name === chosen); if (v) return v; }
+    /* natural/premium voices sound human; online Google/Microsoft voices beat the robotic compact ones (we read sentence by sentence, so their long-text cut-off does not bite) */
+    const score = v => (/Premium|Enhanced|Natural|Neural|Siri/i.test(v.name) ? 6 : 0) + (/Google|Microsoft/.test(v.name) ? 3 : 0) + (/Samantha|Ava|Alex|Daniel|Karen|Moira|M[oó]nica|Paulina|Jorge|Juan|Diego|Carmit/.test(v.name) ? 2 : 0) + (v.localService ? 1 : 0) - (NOVELTY.test(v.name) ? 9 : 0);
+    return pool.slice().sort((a, b) => score(b) - score(a))[0] || null;
   }
   let vq = [], vtok = 0, vAudio = null, warned = {};
   function stopVoice() {
@@ -371,6 +376,7 @@
     : SEARCHED[m] ? (S.lang === 'es' ? `${BOOK[m]} · datos clave verificados en el texto del libro (búsqueda de Google Books)` : `${BOOK[m]} · key facts checked in the book's text (Google Books search)`)
     : BOOK[m] ? (S.lang === 'es' ? `Tema de ${BOOK[m]} · verificado con referencias abiertas (el libro no permite búsqueda)` : `Topic from ${BOOK[m]} · checked against open references (the book is not searchable online)`)
     : undefined });
+  const uniqVocab = list => { const seen = new Set(); return list.filter(v => { const k1 = 'h' + v.he, k2 = 'm' + meaning(v); if (seen.has(k1) || seen.has(k2)) return false; seen.add(k1); seen.add(k2); return true; }); };
   const staticMCQ = q => ({ type: 'mcq', id: q.id, m: q.m, d: q.d, a: q.a, title: '', q: `<p class="qtext">${esc(L(q.q))}</p>`, o: q.o.map(o => esc(L(o))), w: esc(L(q.w)), src: SOURCE[q.m] });
 
   /* ---------- SESSION engine (Duolingo-style overlay) ---------- */
@@ -413,7 +419,7 @@
     } else {
       body = `${c.title ? `<h2 class="ctitle">${c.title}</h2>` : ''}${c.q}
         <div class="choices ${c.tiles ? 'tiles' : ''}">${c.o.map((o, k) => `<button class="choice" data-k="${k}" onclick="A.sel(${k})"><kbd>${k + 1}</kbd><span>${o}</span></button>`).join('')}</div>`;
-      foot = `${X.silent ? '' : `<button class="btn ghost" onclick="A.skip()">${t('skip')}</button>`}<button class="btn green" id="chk" disabled onclick="A.check()">${X.silent ? t('next') : t('check')}</button>`;
+      foot = X.silent ? `<button class="btn green" id="chk" disabled onclick="A.check()">${t('next')}</button>` : `<button class="btn ghost" onclick="A.skip()">${t('skip')}</button>`;
     }
     $('#overlay').innerHTML = `<div class="sess">
       <header class="sess-top"><button class="x" onclick="A.quitAsk()" aria-label="${t('quit')}">✕</button>
@@ -438,9 +444,10 @@
     readParts([textOf(ov.querySelector('.ctitle')), textOf(ov.querySelector('.qtext')), textOf(ov.querySelector('.he-prompt')), ...readChoices(ov)]);
   }
   function sel(k) {
-    if (X.checked) return; SFX.tap(); X.sel = k;
+    if (X.checked) return; X.sel = k;
     document.querySelectorAll('.choice').forEach((b, j) => b.classList.toggle('sel', j === k));
-    $('#chk').disabled = false;
+    if (!X.silent) return check(); /* tap = answer: feedback right away */
+    SFX.tap(); $('#chk').disabled = false;
     if (S.autoRead) readParts([textOf(document.querySelectorAll('.choice')[k])]);
   }
   function check() {
@@ -512,9 +519,11 @@
       const lq = shuffle(NX.qs.filter(q => q.m === id && q.l === i)).map(staticMCQ);
       teach.forEach((c, k) => { cards.push(c); if (k >= 1 && lq.length) cards.push(lq.shift()); });
       cards.push(...lq);
-      const words = l.v.slice(0, 2);
+      const words = l.v.slice(0, 2), pool = NX.vocab.filter(v => v.m === id);
       words.forEach(v => cards.push({ type: 'word', v, moment: true }));
-      if (words.length) cards.push(vocabMCQ(l.v, pick(words), 'listen'));
+      const pairItems = uniqVocab([...words, ...shuffle(pool)]).slice(0, 4);
+      if (pairItems.length >= 3) cards.push({ type: 'pairs', items: pairItems });
+      if (words.length) cards.push(vocabMCQ(pool, pick(words), 'he'));
     }
     R.learn();
     session(cards, { back: '#/', xpBase: 15, onEnd: () => { S.done[nodeKey(id, i)] = 1; } });
@@ -523,9 +532,11 @@
     const m = modById(id); if (!m) return R.learn();
     const pool = NX.vocab.filter(v => v.m === id);
     const exam = shuffle(NX.qs.filter(q => q.m === id)).slice(0, 10).map(staticMCQ);
-    const cards = exam.concat(shuffle(pool).slice(0, id === 'heb' ? 8 : 2).map(v => vocabMCQ(pool, v)));
+    const heb = uniqVocab(shuffle(pool));
+    const cards = shuffle(exam.concat(heb.slice(0, id === 'heb' ? 8 : 2).map(v => vocabMCQ(pool, v, 'he'))));
+    if (heb.length >= 4) cards.splice(Math.floor(cards.length / 2), 0, { type: 'pairs', items: heb.slice(-4) });
     R.learn();
-    session(shuffle(cards), { back: '#/', xpBase: 25, doneTitle: t('quizDone'), onEnd: acc => { if (acc >= 60) S.done[nodeKey(id, 'q')] = 1; } });
+    session(cards, { back: '#/', xpBase: 25, doneTitle: t('quizDone'), onEnd: acc => { if (acc >= 60) S.done[nodeKey(id, 'q')] = 1; } });
   };
   R.review = () => {
     const cards = S.wrong.map(id => NX.qs.find(q => q.id === id)).filter(Boolean).map(staticMCQ);
@@ -799,6 +810,7 @@
         <label>${t('autoRead')} <span class="seg"><button class="${S.autoRead ? 'on' : ''}" onclick="A.setOpt('autoRead',true)">${t('on')}</button><button class="${!S.autoRead ? 'on' : ''}" onclick="A.setOpt('autoRead',false)">${t('off')}</button></span></label>
         <label>${t('speed2')} <span class="seg"><button class="${S.rate < 1 ? 'on' : ''}" onclick="A.setOpt('rate',.8)">${t('slow')}</button><button class="${S.rate >= 1 ? 'on' : ''}" onclick="A.setOpt('rate',1)">${t('normal')}</button></span></label>
         <div class="audiotest"><button class="btn blue" onclick="A.testAudio()">${img('speaker')} ${t('testAudio')}</button><ul id="audiorep"></ul></div>
+        ${voicePicker()}
         <button class="btn red small" onclick="A.reset()">${t('reset')}</button></section>
       <p class="fine">${t('disclaimer')} · 3D images: Microsoft Fluent Emoji (MIT).</p>`);
   };
@@ -959,6 +971,19 @@
   }
   function refreshCloudBox() { const b = $('#cloudbox'); if (b) b.innerHTML = cloudBox(); }
 
+  /* choose the reading voice per language; previews on change */
+  function voicePicker() {
+    loadVoices();
+    const row = (lang, label) => {
+      const pool = voicesFor(lang), cur = (S.voice || {})[lang] || '';
+      const best = voiceFor(lang);
+      return `<label>${label} <span class="voicepick"><select onchange="A.setVoice('${lang}', this.value)"><option value="">${t('autoVoice')}${best && !cur ? ` (${esc(best.name)})` : ''}</option>
+        ${pool.map(v => `<option value="${esc(v.name)}" ${v.name === cur ? 'selected' : ''}>${esc(v.name)}${/Premium|Enhanced|Natural|Neural|Siri/i.test(v.name) ? ' ★' : ''}${v.localService ? '' : ' · online'}</option>`).join('')}</select>
+        <button class="readbtn" onclick="A.previewVoice('${lang}')" aria-label="${t('listen')}">${img('speaker')}</button></span></label>`;
+    };
+    return `<h3>${t('voicesTitle')}</h3>${row(S.lang, S.lang === 'es' ? 'Español' : 'English')}<p class="fine">${t('voiceTip')}</p>`;
+  }
+
   /* ---------- router & events ---------- */
   function route() {
     stopTimer(); stopVoice(); cancelAnimationFrame(ecgRAF);
@@ -983,7 +1008,16 @@
   window.A = {
     route, sel, check, flip, grade, startMock, simPick, simNext, speedGo, speedAns,
     card: () => X && X.cards[X.i], /* read-only hook for automated tests */
-    readCard, readStep, readFb: () => readEl($('.fb-txt')),
+    /* speaker buttons toggle: tap while reading = stop */
+    readCard: () => document.body.classList.contains('speaking') ? stopVoice() : readCard(),
+    readStep: () => document.body.classList.contains('speaking') ? stopVoice() : readStep(),
+    readFb: () => document.body.classList.contains('speaking') ? stopVoice() : readEl($('.fb-txt')),
+    setVoice: (lang, name) => { S.voice = Object.assign({}, S.voice, { [lang]: name || undefined }); save(); A.previewVoice(lang); },
+    previewVoice: lang => {
+      const sample = { en: `Hi ${S.name}, this is how questions will sound.`, es: `Hola ${S.name}, así sonarán las preguntas.`, he: 'שלום, בהצלחה במבחן' }[lang];
+      if (lang === 'he') { const v = voiceFor('he'); if (!v) return play([{ he: 'בהצלחה' }]); stopVoice(); const tok = vtok; vq = []; document.body.classList.add('speaking'); return utter(sample, 'he', tok); }
+      stopVoice(); const tok = vtok; document.body.classList.add('speaking'); utter(sample, lang, tok);
+    },
     toggleAuto: b => { S.autoRead = !S.autoRead; save(); document.querySelectorAll('.autochip').forEach(x => { x.classList.toggle('on', S.autoRead); x.setAttribute('aria-pressed', S.autoRead); }); if (!S.autoRead) stopVoice(); else (X ? readCard : readStep)(); },
     testAudio: () => {
       loadVoices();

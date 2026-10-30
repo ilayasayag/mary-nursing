@@ -438,6 +438,10 @@ h2 > img { width: 30px; height: 30px; vertical-align: -6px; margin-right: 4px; }
 #cloudbox input[type=email] { flex: 1; min-width: 200px; }
 #cloudbox label.btn { cursor: pointer; }
 
+/* voice picker */
+.voicepick { display: inline-flex; gap: 8px; align-items: center; }
+.voicepick select { font: 700 .9rem var(--body); padding: 8px 10px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); max-width: 230px; }
+
 /* read-aloud controls */
 .readbtn { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface);
   box-shadow: 0 3px 0 var(--line); cursor: pointer; transition: transform .08s, box-shadow .08s; }
@@ -445,7 +449,8 @@ h2 > img { width: 30px; height: 30px; vertical-align: -6px; margin-right: 4px; }
 .readbtn:hover img { animation: wiggle .5s; }
 .readbtn:active { transform: translateY(3px); box-shadow: none; }
 body.speaking .readbtn { border-color: #84d8ff; background: var(--blue-l); box-shadow: 0 3px 0 #84d8ff; }
-body.speaking .readbtn img { animation: talkpulse .7s ease-in-out infinite; }
+body.speaking .readbtn img { display: none; }
+body.speaking .readbtn::before { content: ""; width: 14px; height: 14px; border-radius: 3px; background: var(--blue-d); animation: talkpulse .9s ease-in-out infinite; }
 .autochip { flex: none; padding: 6px 10px; border-radius: 99px; border: 2px solid var(--line); background: var(--surface); color: var(--muted);
   font: 900 .72rem var(--body); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
 .autochip::before { content: "○ "; }
