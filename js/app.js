@@ -313,13 +313,15 @@
     if (mode === 'mean') return { ...base, title: `${t('meanHeb')} “${esc(meaning(v))}”?`, q: '', o: opts.map(x => heChip(x)), tiles: true };
     return { ...base, title: alpha ? t('letterQ') : t('whatMeans'), q: `<button class="he-prompt" data-say="${v.he}"><span class="he" lang="he" dir="rtl">${v.he}</span>${S.hints && !alpha ? `<i>${esc(v.tr)}</i>` : ''}</button>`, o: opts.map(x => esc(meaning(x))) };
   }
-  /* where each module's questions come from on Mary's Sept–Dec 2026 reading list */
-  const SOURCE = {
-    fund: 'Kozier & Erb’s Fundamentals of Nursing, 11th ed.', medsurg: 'Brunner & Suddarth’s Medical-Surgical Nursing, 16th ed.',
-    pharm: 'Nursing 2025-2026 Drug Handbook', peds: 'Wong’s Nursing Care of Infants and Children, 12th ed.',
-    mat: 'Olds’ Maternal-Newborn Nursing, 12th ed.', psych: 'Townsend, Psychiatric Mental Health Nursing, 10th ed.',
-    emerg: 'AHA 2020: Adult BLS and First Aid guidelines', law: 'Israeli laws and Ministry of Health circulars'
-  };
+  /* honest provenance on Mary's Sept–Dec 2026 reading list: laws/circulars and AHA were checked against
+     their texts; textbook topics were checked against open references, not the (paid) books themselves */
+  const BOOK = { fund: 'Kozier & Erb (Fundamentals)', medsurg: 'Brunner & Suddarth (Med-Surg, 16th ed.)', pharm: 'Nursing Drug Handbook 2025-2026',
+    peds: 'Wong’s (Pediatrics)', mat: 'Olds’ (Maternal-Newborn)', psych: 'Townsend (Psychiatric)' };
+  const SOURCE = new Proxy({}, { get: (_, m) =>
+    m === 'law' ? (S.lang === 'es' ? 'Leyes israelíes y circulares del Ministerio · verificado con los textos oficiales' : 'Israeli laws and Ministry circulars · checked against the official texts')
+    : m === 'emerg' ? (S.lang === 'es' ? 'AHA 2020 SVB adulto y primeros auxilios · verificado con la guía' : 'AHA 2020 Adult BLS and First Aid · checked against the guideline')
+    : BOOK[m] ? (S.lang === 'es' ? `Tema de ${BOOK[m]} · verificado con referencias abiertas, no con el libro` : `Topic from ${BOOK[m]} · checked against open references, not the book itself`)
+    : undefined });
   const staticMCQ = q => ({ type: 'mcq', id: q.id, m: q.m, d: q.d, a: q.a, title: '', q: `<p class="qtext">${esc(L(q.q))}</p>`, o: q.o.map(o => esc(L(o))), w: esc(L(q.w)), src: SOURCE[q.m] });
 
   /* ---------- SESSION engine (Duolingo-style overlay) ---------- */

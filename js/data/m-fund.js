@@ -15,7 +15,7 @@ NX.addModule({
     { t: ['Vital signs (adult)', 'Signos vitales (adulto)'],
       p: [
         ['Heart rate 60-100/min. Respiratory rate 12-20/min. Temperature about 36.5-37.5 °C. SpO2 95% or more (COPD target 88-92%).', 'Frecuencia cardiaca 60-100/min. Frecuencia respiratoria 12-20/min. Temperatura aprox. 36,5-37,5 °C. SpO2 ≥95% (en EPOC objetivo 88-92%).'],
-        ['Blood pressure: normal below 120/80 mmHg; hypertension is 140/90 or more on repeated readings. Pulse pressure = systolic - diastolic.', 'Presión arterial: normal por debajo de 120/80 mmHg; hipertensión ≥140/90 en mediciones repetidas. Presión de pulso = sistólica - diastólica.'],
+        ['Blood pressure (ACC/AHA categories, used by Brunner & Suddarth): normal below 120/80; elevated 120-129/<80; stage 1 hypertension 130-139 or 80-89; stage 2 140/90 or more. Diagnose on repeated readings. Pulse pressure = systolic - diastolic.', 'Presión arterial (categorías ACC/AHA, usadas por Brunner & Suddarth): normal <120/80; elevada 120-129/<80; hipertensión estadio 1 130-139 u 80-89; estadio 2 ≥140/90. Diagnóstico con mediciones repetidas. Presión de pulso = sistólica - diastólica.'],
         ['Use the right cuff size. A cuff that is too small gives a falsely high reading.', 'Usa el manguito del tamaño correcto. Uno demasiado pequeño da una lectura falsamente alta.'],
         ['Pain is the “fifth vital sign”. Use a validated scale (0-10 numeric, FLACC for children, behavioral scales for patients who cannot speak). See circular 155/2019.', 'El dolor es el “quinto signo vital”. Usa una escala validada (numérica 0-10, FLACC en niños, escalas conductuales si no puede hablar). Ver circular 155/2019.']
       ],
