@@ -10,4 +10,11 @@
    };
 
    These values are public by design; the Firestore rules in firestore.rules keep each person's data private. */
-window.NX_CLOUD = null;
+window.NX_CLOUD = {
+  apiKey: 'AIzaSyC83PmUUU2U-LPHZ3pECrpsQh25nmrcV30',
+  authDomain: 'mary-nursin.firebaseapp.com',
+  projectId: 'mary-nursin',
+  storageBucket: 'mary-nursin.firebasestorage.app',
+  messagingSenderId: '696760761846',
+  appId: '1:696760761846:web:3de8d357a98fcd4b031bd7'
+};

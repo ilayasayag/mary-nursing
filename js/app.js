@@ -907,13 +907,22 @@
         if (email) { await A_.signInWithEmailLink(auth, email, location.href); try { localStorage.removeItem('lev.email'); } catch (e) { /* storage blocked */ } }
         history.replaceState(null, '', location.pathname + '#/me');
       }
+      A_.getRedirectResult(auth).catch(e => { cloud.err = authError(e); refreshCloudBox(); });
       A_.onAuthStateChanged(auth, async user => {
         cloud.user = user; afterSave = user ? schedulePush : null;
         if (user) await cloudPull();
         refreshCloudBox();
       });
-    } catch (e) { cloud.err = String(e.message || e); refreshCloudBox(); }
+    } catch (e) { cloud.err = authError(e); refreshCloudBox(); }
   }
+  const authError = e => {
+    const c = (e && e.code) || '';
+    if (c.includes('operation-not-allowed')) return S.lang === 'es' ? 'Este método de acceso no está activado en Firebase (Authentication → Sign-in method).' : 'This sign-in method is not switched on in Firebase (Authentication → Sign-in method).';
+    if (c.includes('unauthorized-domain')) return S.lang === 'es' ? 'Esta dirección no está en los dominios autorizados de Firebase.' : 'This site address is not in Firebase’s authorized domains.';
+    if (c.includes('network-request-failed')) return S.lang === 'es' ? 'Sin conexión. Inténtalo de nuevo.' : 'No connection. Please try again.';
+    if (c.includes('invalid-email')) return S.lang === 'es' ? 'Ese correo no parece válido.' : 'That email does not look right.';
+    return String((e && (e.code || e.message)) || e);
+  };
   const progressDoc = () => cloud.F_.doc(cloud.db, 'progress', cloud.user.uid);
   async function cloudPull() {
     try {
@@ -999,10 +1008,17 @@
     mergeImport: () => { if (!pendingImport) return; S = merge(S, pendingImport); pendingImport = null; save(); toast(t('imported'), 'party'); confetti(); location.hash = '#/'; },
     install: async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice.catch(() => null); installEvt = null; refreshCloudBox(); },
     remindLater: () => { S.remindAfter = Date.now() + 864e5; save(); route(); },
-    googleIn: async () => { try { await cloud.A_.signInWithPopup(cloud.auth, new cloud.A_.GoogleAuthProvider()); } catch (e) { cloud.err = String(e.code || e.message || e); refreshCloudBox(); } },
+    googleIn: async () => {
+      const prov = new cloud.A_.GoogleAuthProvider(); prov.setCustomParameters({ prompt: 'select_account' });
+      try { await cloud.A_.signInWithPopup(cloud.auth, prov); }
+      catch (e) {
+        if (/popup-blocked|operation-not-supported|web-storage-unsupported/.test(e.code || '')) { try { await cloud.A_.signInWithRedirect(cloud.auth, prov); return; } catch (e2) { e = e2; } }
+        if (!/popup-closed-by-user|cancelled-popup-request/.test(e.code || '')) { cloud.err = authError(e); refreshCloudBox(); }
+      }
+    },
     emailIn: async email => {
       try { await cloud.A_.sendSignInLinkToEmail(cloud.auth, email, { url: location.origin + location.pathname, handleCodeInApp: true }); try { localStorage.setItem('lev.email', email); } catch (e) { /* storage blocked */ } toast(t('emailSent'), 'check'); }
-      catch (e) { cloud.err = String(e.code || e.message || e); refreshCloudBox(); }
+      catch (e) { cloud.err = authError(e); refreshCloudBox(); }
     },
     syncNow: () => cloudPull(),
     signOut: async () => { await cloud.A_.signOut(cloud.auth); refreshCloudBox(); }
