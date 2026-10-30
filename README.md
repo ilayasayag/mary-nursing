@@ -7,8 +7,8 @@ Static HTML/CSS/JS: no build step and no backend. Progress is saved in the brows
 Content follows the official **September–December 2026** reading list (including CPR per AHA 2020).
 
 ## What's inside
-- **Learn path**: 8 clinical units (43 lessons) where teaching is interleaved with 3 exam-style questions per lesson, then a short "Hebrew moment"; a Bedside Medical Hebrew unit at the end; a checkpoint per unit. Hearts, XP, streaks, daily goal.
-- **168 exam questions** (English + Spanish). Each answer shows its source on the reading list (textbook, AHA 2020, law or MOH circular). Law and circular claims were checked against the official texts.
+- **Learn path**: 8 clinical units (43 lessons) where teaching is interleaved with 3-4 exam-style questions per lesson (ordered warm-up → core → exam-hard, tagged on each card), then a short "Hebrew moment"; a Bedside Medical Hebrew unit at the end; a checkpoint per unit. Hearts, XP, streaks, daily goal.
+- **200 exam questions** (English + Spanish), each with four close options in random order: the wrong answers are real actions, drugs or values that fit a different situation, and option length gives no clue. Each answer shows its source on the reading list (textbook, AHA 2020, law or MOH circular). Law and circular claims were checked against the official texts.
 - **Simulation Ward**: 9 interactive patient cases with a live ECG/vitals monitor. Each choice is scored on safety, assessment, intervention, communication and documentation, followed by a debrief.
 - **Practice**: timed adaptive mock exam, Priority Rush (90 s of exam questions), Match Madness (drug→antidote, sign→condition, values, rules), fix-your-mistakes, Hebrew cards.
 - **Exam games**: Triage Rush (order 4 patients, animated debrief), Med Pass (give / hold / clarify from the order and chart, rules checked in Brunner & Suddarth), Vital Check (low / normal / high on an animated gauge).

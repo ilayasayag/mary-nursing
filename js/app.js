@@ -53,7 +53,7 @@
       patient: 'Patient', yrs: 'yrs', skills: { safety: 'Safety', assess: 'Assessment', act: 'Intervention', comm: 'Communication', doc: 'Documentation' },
       debrief: 'Debrief', best: 'Best answer', yourPick: 'Your choice', again: 'Play again', backWard: 'Back to the ward', pts: 'pts',
       flash: 'Hebrew cards', flashD: 'Medical Hebrew with spaced repetition: your language on the front, Hebrew on the back.', match: 'Match Madness', matchD: 'Match drugs to antidotes, signs to conditions, normal values and rules. Against the clock.',
-      speed: 'Priority Rush', speedD: '90 seconds of exam questions. Streaks give double points!', source: 'Source', hebMoment: 'Hebrew moment',
+      speed: 'Priority Rush', speedD: '90 seconds of exam questions. Streaks give double points!', source: 'Source', hebMoment: 'Hebrew moment', lvl1: 'Warm-up', lvl2: 'Core', lvl3: 'Exam-hard',
       mock: 'Mock exam', mockD: 'Timed, forward-only, adaptive. No feedback until the end, like a real exam.', review: 'Fix mistakes', reviewD: 'Retry every question you got wrong.',
       noWrong: 'No mistakes to fix. Amazing!', deck: 'Deck', all: 'All units', mastered: 'mastered', reveal: 'Tap to flip', know: 'Got it', notyet: 'Again',
       answer: 'Your answer', steps: 'Solution', length: 'Length', questions: 'questions', byTopic: 'By topic', score: 'Score', play: 'Play', record: 'Record',
@@ -106,7 +106,7 @@
       patient: 'Paciente', yrs: 'años', skills: { safety: 'Seguridad', assess: 'Valoración', act: 'Intervención', comm: 'Comunicación', doc: 'Documentación' },
       debrief: 'Análisis', best: 'Mejor respuesta', yourPick: 'Tu elección', again: 'Jugar otra vez', backWard: 'Volver a la sala', pts: 'pts',
       flash: 'Tarjetas de hebreo', flashD: 'Hebreo médico con repetición espaciada: tu idioma delante, hebreo detrás.', match: 'Parejas locas', matchD: 'Une fármacos con antídotos, signos con enfermedades, valores normales y normas. Contra reloj.',
-      speed: 'Carrera de prioridades', speedD: '90 segundos de preguntas de examen. ¡Las rachas dan doble puntuación!', source: 'Fuente', hebMoment: 'Momento de hebreo',
+      speed: 'Carrera de prioridades', speedD: '90 segundos de preguntas de examen. ¡Las rachas dan doble puntuación!', source: 'Fuente', hebMoment: 'Momento de hebreo', lvl1: 'Calentamiento', lvl2: 'Base', lvl3: 'Nivel examen',
       mock: 'Simulacro', mockD: 'Con tiempo, sin volver atrás, adaptativo. Sin correcciones hasta el final, como un examen real.', review: 'Corregir errores', reviewD: 'Repite las preguntas que fallaste.',
       noWrong: 'No hay errores que corregir. ¡Increíble!', deck: 'Mazo', all: 'Todas las unidades', mastered: 'dominadas', reveal: 'Toca para girar', know: 'La sé', notyet: 'Otra vez',
       answer: 'Tu respuesta', steps: 'Solución', length: 'Longitud', questions: 'preguntas', byTopic: 'Por tema', score: 'Puntuación', play: 'Jugar', record: 'Récord',
@@ -420,7 +420,10 @@
     return hint(chips(escaped));
   }
   const uniqVocab = list => { const seen = new Set(); return list.filter(v => { const k1 = 'h' + v.he, k2 = 'm' + meaning(v); if (seen.has(k1) || seen.has(k2)) return false; seen.add(k1); seen.add(k2); return true; }); };
-  const staticMCQ = q => ({ type: 'mcq', id: q.id, m: q.m, d: q.d, a: q.a, title: '', q: `<p class="qtext">${chips(esc(L(q.q)))}</p>`, o: q.o.map(o => chips(esc(L(o)))), w: chips(esc(L(q.w))), src: SOURCE[q.m] });
+  /* options are shuffled every time, so the answer's position is never a clue */
+  const staticMCQ = q => { const ord = shuffle(q.o.map((o, k) => k));
+    return { type: 'mcq', id: q.id, m: q.m, d: q.d, a: ord.indexOf(q.a), title: '', q: `<p class="qtext">${chips(esc(L(q.q)))}</p>`, o: ord.map(k => chips(esc(L(q.o[k])))), w: chips(esc(L(q.w))), src: SOURCE[q.m] }; };
+  const byLevel = list => list.slice().sort((a, b) => a.d - b.d); /* stable: keeps the shuffle within a level */
 
   /* ---------- SESSION engine (Duolingo-style overlay) ---------- */
   let X = null;
@@ -460,7 +463,7 @@
       foot = `<button class="btn green wide" id="ctn" disabled onclick="A.cont()">${t('continue')}</button>`;
       X.pair = { sel: null, done: 0, total: c.items.length };
     } else {
-      body = `${c.title ? `<h2 class="ctitle">${c.title}</h2>` : ''}${c.q}
+      body = `${c.id && c.d ? `<span class="lvl l${c.d}"><i></i><i></i><i></i>${t('lvl' + c.d)}</span>` : ''}${c.title ? `<h2 class="ctitle">${c.title}</h2>` : ''}${c.q}
         <div class="choices ${c.tiles ? 'tiles' : ''}">${c.o.map((o, k) => `<button class="choice" data-k="${k}" onclick="A.sel(${k})"><kbd>${k + 1}</kbd><span>${o}</span></button>`).join('')}</div>`;
       foot = X.silent ? `<button class="btn green" id="chk" disabled onclick="A.check()">${t('next')}</button>` : `<button class="btn ghost" onclick="A.skip()">${t('skip')}</button>`;
     }
@@ -559,7 +562,7 @@
       cards.push(vocabMCQ(l.v, pick(words)), vocabMCQ(l.v, pick(words), 'listen'));
     } else {
       /* exam first: teaching interleaved with this lesson's clinical questions, then a short Hebrew moment */
-      const lq = shuffle(NX.qs.filter(q => q.m === id && q.l === i)).map(staticMCQ);
+      const lq = byLevel(shuffle(NX.qs.filter(q => q.m === id && q.l === i))).map(staticMCQ); /* warm-up → exam-hard */
       teach.forEach((c, k) => { cards.push(c); if (k >= 1 && lq.length) cards.push(lq.shift()); });
       cards.push(...lq);
       const words = l.v.slice(0, 2), pool = NX.vocab.filter(v => v.m === id);
@@ -574,9 +577,12 @@
   R.quiz = id => {
     const m = modById(id); if (!m) return R.learn();
     const pool = NX.vocab.filter(v => v.m === id);
-    const exam = shuffle(NX.qs.filter(q => q.m === id)).slice(0, 10).map(staticMCQ);
+    /* checkpoint climbs: the 10 questions run from warm-up to exam-hard, Hebrew cards break it up */
+    const exam = byLevel(shuffle(NX.qs.filter(q => q.m === id)).slice(0, 10)).map(staticMCQ);
     const heb = uniqVocab(shuffle(pool));
-    const cards = shuffle(exam.concat(heb.slice(0, id === 'heb' ? 8 : 2).map(v => vocabMCQ(pool, v, 'he'))));
+    const hebQ = heb.slice(0, id === 'heb' ? 8 : 2).map(v => vocabMCQ(pool, v, 'he'));
+    const cards = id === 'heb' ? shuffle(exam.concat(hebQ)) : exam.slice();
+    if (id !== 'heb') hebQ.forEach((c, k) => cards.splice(3 + k * 4, 0, c));
     if (heb.length >= 4) cards.splice(Math.floor(cards.length / 2), 0, { type: 'pairs', items: heb.slice(-4) });
     R.learn();
     session(cards, { back: '#/', xpBase: 25, doneTitle: t('quizDone'), onEnd: acc => { if (acc >= 60) S.done[nodeKey(id, 'q')] = 1; } });

@@ -151,3 +151,14 @@ h2.sec img { width: 34px; height: 34px; }
   text-decoration: none; color: var(--ink); font-weight: 800; font-size: .74rem; text-align: center; animation: rise .45s both var(--d); }
 .gs img { width: 40px; height: 40px; }
 @media (max-width: 720px) { .games-strip { grid-template-columns: repeat(5, 1fr); gap: 6px; } .gs { font-size: .62rem; padding: 8px 2px; } .gs img { width: 32px; height: 32px; } }
+
+/* difficulty tag on exam questions: 1-3 bars, warm-up → exam-hard */
+.lvl { --c: var(--green); display: inline-flex; align-items: center; gap: 3px; margin: 2px 0 10px; padding: 4px 10px 4px 8px; border-radius: 99px;
+  font: 800 .72rem/1 var(--body, inherit); letter-spacing: .06em; text-transform: uppercase; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent);
+  animation: lvlIn .35s cubic-bezier(.2, .9, .3, 1.3) both; }
+.lvl i { width: 4px; border-radius: 2px; background: var(--c); opacity: .25; }
+.lvl i:nth-child(1) { height: 7px; } .lvl i:nth-child(2) { height: 10px; } .lvl i:nth-child(3) { height: 13px; margin-right: 5px; }
+.lvl.l1 i:nth-child(1), .lvl.l2 i:nth-child(-n+2), .lvl.l3 i { opacity: 1; }
+.lvl.l2 { --c: var(--orange); }
+.lvl.l3 { --c: var(--red); }
+@keyframes lvlIn { from { opacity: 0; transform: translateY(-4px) scale(.9); } }
