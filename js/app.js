@@ -52,7 +52,7 @@
       readAloud: 'Read aloud', autoRead: 'Read questions aloud automatically', auto: 'Auto', speed2: 'Reading speed', slow: 'Slow', normal: 'Normal',
       testAudio: 'Test audio', audioHe: 'Hebrew: recorded clips', voiceFound: 'voice', voiceNone: 'no voice on this device',
       noVoice: 'This device has no {l} voice. Add one in system settings → Accessibility → Spoken content.',
-      saveTitle: 'Save your progress', localOnly: 'Progress is saved in this browser only. On iPhone, Safari can erase it after a few weeks without use, so sign in or keep a backup.',
+      saveTitle: 'Save your progress', localOnly: 'Progress is saved in this browser only. On iPhone, Safari can erase it after a few weeks without use, so download a backup every few days. To move to another phone or computer, restore the file there.',
       cloudOff: 'Cloud sign-in is not switched on yet (Ilay needs to add the Firebase settings).', cloudLoading: 'Connecting to cloud save…',
       cloudPitch: 'Sign in once and your progress is saved online and shared between your phone and computer.', googleBtn: 'Continue with Google',
       emailPh: 'your@email.com', emailBtn: 'Email me a sign-in link', emailSent: 'Check your email and tap the link to sign in.', emailAgain: 'Confirm your email to finish signing in:',
@@ -86,7 +86,7 @@
       readAloud: 'Leer en voz alta', autoRead: 'Leer las preguntas en voz alta automáticamente', auto: 'Auto', speed2: 'Velocidad de lectura', slow: 'Lenta', normal: 'Normal',
       testAudio: 'Probar audio', audioHe: 'Hebreo: grabaciones', voiceFound: 'voz', voiceNone: 'no hay voz en este dispositivo',
       noVoice: 'Este dispositivo no tiene voz en {l}. Añádela en Ajustes → Accesibilidad → Contenido leído.',
-      saveTitle: 'Guarda tu progreso', localOnly: 'El progreso se guarda solo en este navegador. En iPhone, Safari puede borrarlo tras unas semanas sin uso: inicia sesión o guarda una copia.',
+      saveTitle: 'Guarda tu progreso', localOnly: 'El progreso se guarda solo en este navegador. En iPhone, Safari puede borrarlo tras unas semanas sin uso: descarga una copia cada pocos días. Para pasar a otro móvil u ordenador, restaura el archivo allí.',
       cloudOff: 'El inicio de sesión en la nube aún no está activado (Ilay debe añadir los ajustes de Firebase).', cloudLoading: 'Conectando con la nube…',
       cloudPitch: 'Inicia sesión una vez y tu progreso se guarda en línea y se comparte entre el móvil y el ordenador.', googleBtn: 'Continuar con Google',
       emailPh: 'tu@correo.com', emailBtn: 'Enviarme un enlace de acceso', emailSent: 'Revisa tu correo y toca el enlace para entrar.', emailAgain: 'Confirma tu correo para terminar de entrar:',
@@ -848,7 +848,7 @@
     const backup = `<div class="row"><button class="btn blue" onclick="A.backup()">${img('check')} ${t('backupBtn')}</button>
       <label class="btn ghost">${t('restoreBtn')}<input type="file" accept="application/json,.json" hidden onchange="A.restore(this.files[0])"></label></div>`;
     let top;
-    if (!CLOUD) top = `<p class="muted">${t('localOnly')}</p><p class="fine">${t('cloudOff')}</p>`;
+    if (!CLOUD) top = `<p class="muted">${t('localOnly')}</p>`;
     else if (!cloud.ready) top = `<p class="muted">${cloud.err ? '⚠ ' + esc(cloud.err) : t('cloudLoading')}</p>`;
     else if (cloud.user) top = `<p>☁️ <b>${t('signedInAs')}</b> ${esc(cloud.user.email || cloud.user.displayName || '')}</p>
       <p class="muted">${cloud.busy ? t('syncing') : cloud.synced ? `${t('syncedAt')} ${new Date(cloud.synced).toLocaleTimeString()}` : ''}${cloud.err ? ' · ⚠ ' + esc(cloud.err) : ''}</p>
