@@ -14,14 +14,25 @@
   const UNIT_COLORS = ['#58cc02', '#1cb0f6', '#ce82ff', '#ff9600', '#ff4b4b', '#00cd9c', '#ff86d0', '#2b70c9', '#ffc800', '#7c5cff'];
 
   /* ---------- state ---------- */
-  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, daily: { d: '', xp: 0 }, sims: {}, planStart: '', updatedAt: 0 };
+  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, daily: { d: '', xp: 0 }, sims: {}, planStart: '', updatedAt: 0, lastBackup: 0, remindAfter: 0 };
   let S;
   try { S = Object.assign({}, def, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = Object.assign({}, def); }
   if (!S.planStart) S.planStart = today();
+  /* second copy in IndexedDB: survives some localStorage clean-ups and lets us recover if localStorage is wiped */
+  const idb = (() => {
+    let dbp;
+    const open = () => dbp || (dbp = new Promise((res, rej) => { const r = indexedDB.open('lev', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
+    return {
+      get: k => open().then(db => new Promise(res => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(undefined); })).catch(() => undefined),
+      set: (k, v) => open().then(db => { db.transaction('kv', 'readwrite').objectStore('kv').put(v, k); }).catch(() => { /* IndexedDB unavailable */ })
+    };
+  })();
   let afterSave = null; /* set by cloud sync once signed in */
   const save = () => {
     S.updatedAt = Date.now();
-    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage blocked: progress lives in memory */ }
+    const json = JSON.stringify(S);
+    try { localStorage.setItem(KEY, json); } catch (e) { /* storage blocked: progress lives in memory */ }
+    idb.set(KEY, json);
     if (afterSave) afterSave();
   };
 
@@ -52,11 +63,19 @@
       readAloud: 'Read aloud', autoRead: 'Read questions aloud automatically', auto: 'Auto', speed2: 'Reading speed', slow: 'Slow', normal: 'Normal',
       testAudio: 'Test audio', audioHe: 'Hebrew: recorded clips', voiceFound: 'voice', voiceNone: 'no voice on this device',
       noVoice: 'This device has no {l} voice. Add one in system settings → Accessibility → Spoken content.',
-      saveTitle: 'Save your progress', localOnly: 'Progress is saved in this browser only. On iPhone, Safari can erase it after a few weeks without use, so download a backup every few days. To move to another phone or computer, restore the file there.',
+      saveTitle: 'Save your progress', localOnly: 'Progress is saved on this device, in two places. On iPhone, Safari can erase website data after a few weeks without use, so install the app or send yourself a copy every few days. To continue on another phone or computer, open that link there.',
       cloudOff: 'Cloud sign-in is not switched on yet (Ilay needs to add the Firebase settings).', cloudLoading: 'Connecting to cloud save…',
       cloudPitch: 'Sign in once and your progress is saved online and shared between your phone and computer.', googleBtn: 'Continue with Google',
       emailPh: 'your@email.com', emailBtn: 'Email me a sign-in link', emailSent: 'Check your email and tap the link to sign in.', emailAgain: 'Confirm your email to finish signing in:',
       signedInAs: 'Signed in as', syncing: 'Syncing…', syncedAt: 'Saved online at', syncNow: 'Sync now', signOut: 'Sign out',
+      shareBtn: 'Send progress to my other device', shareText: 'Open this link to continue my lev. nursing progress', linkCopied: 'Link copied. Paste it into WhatsApp or an email to yourself.',
+      copyManual: 'Copy this link and send it to yourself:', qrBtn: 'Show QR code', qrHelp: 'Scan with the other device’s camera to move your progress there.', qrBig: 'Too much progress for one QR code. Use the link instead.',
+      importTitle: 'Progress from another device', importD: 'This link holds saved progress. Merge it into this device? Nothing here will be lost.', mergeBtn: 'Merge into this device', cancel: 'Cancel',
+      importBad: 'This link looks damaged. Ask for a new one.', imported: 'Progress merged!',
+      installBtn: 'Install the app', installIOS: 'On iPhone: tap Share ⬆︎, then “Add to Home Screen”. The app keeps progress safer and works offline.', installed: 'Installed as an app ✓',
+      installNote: 'Note: an installed app has its own storage. Send progress from the browser to the app once with the link above.',
+      persistOk: 'Storage on this device is protected ✓', remindTitle: 'Keep your progress safe', remindD: 'Send yourself a copy so nothing is lost if this phone clears its data.', later: 'Later',
+      lastBackup: 'Last copy sent:', never: 'never',
       backupBtn: 'Download backup', restoreBtn: 'Restore from backup', restored: 'Progress restored!', restoreBad: 'That file is not a lev backup.',
       disclaimer: 'Unofficial study aid, written from the official MOH topic list and the Sept–Dec 2026 reading list. It does not replace the textbooks. Always check details with the Nursing Division.',
       cheer: ['You’re doing great, {n}!', 'Every lesson is a step closer, {n}.', '¡Vamos, {n}! Keep going.', 'Hebrew + nursing = superpower, {n}.']
@@ -86,11 +105,19 @@
       readAloud: 'Leer en voz alta', autoRead: 'Leer las preguntas en voz alta automáticamente', auto: 'Auto', speed2: 'Velocidad de lectura', slow: 'Lenta', normal: 'Normal',
       testAudio: 'Probar audio', audioHe: 'Hebreo: grabaciones', voiceFound: 'voz', voiceNone: 'no hay voz en este dispositivo',
       noVoice: 'Este dispositivo no tiene voz en {l}. Añádela en Ajustes → Accesibilidad → Contenido leído.',
-      saveTitle: 'Guarda tu progreso', localOnly: 'El progreso se guarda solo en este navegador. En iPhone, Safari puede borrarlo tras unas semanas sin uso: descarga una copia cada pocos días. Para pasar a otro móvil u ordenador, restaura el archivo allí.',
+      saveTitle: 'Guarda tu progreso', localOnly: 'El progreso se guarda en este dispositivo, en dos lugares. En iPhone, Safari puede borrar los datos de las webs tras unas semanas sin uso: instala la app o envíate una copia cada pocos días. Para seguir en otro móvil u ordenador, abre ese enlace allí.',
       cloudOff: 'El inicio de sesión en la nube aún no está activado (Ilay debe añadir los ajustes de Firebase).', cloudLoading: 'Conectando con la nube…',
       cloudPitch: 'Inicia sesión una vez y tu progreso se guarda en línea y se comparte entre el móvil y el ordenador.', googleBtn: 'Continuar con Google',
       emailPh: 'tu@correo.com', emailBtn: 'Enviarme un enlace de acceso', emailSent: 'Revisa tu correo y toca el enlace para entrar.', emailAgain: 'Confirma tu correo para terminar de entrar:',
       signedInAs: 'Sesión iniciada como', syncing: 'Sincronizando…', syncedAt: 'Guardado en línea a las', syncNow: 'Sincronizar', signOut: 'Cerrar sesión',
+      shareBtn: 'Enviar progreso a mi otro dispositivo', shareText: 'Abre este enlace para continuar mi progreso en lev.', linkCopied: 'Enlace copiado. Pégalo en WhatsApp o en un correo para ti.',
+      copyManual: 'Copia este enlace y envíatelo:', qrBtn: 'Mostrar código QR', qrHelp: 'Escanéalo con la cámara del otro dispositivo para pasar allí tu progreso.', qrBig: 'Hay demasiado progreso para un QR. Usa el enlace.',
+      importTitle: 'Progreso de otro dispositivo', importD: 'Este enlace contiene progreso guardado. ¿Unirlo a este dispositivo? No se perderá nada de aquí.', mergeBtn: 'Unir a este dispositivo', cancel: 'Cancelar',
+      importBad: 'Este enlace parece dañado. Pide uno nuevo.', imported: '¡Progreso unido!',
+      installBtn: 'Instalar la app', installIOS: 'En iPhone: toca Compartir ⬆︎ y luego “Añadir a pantalla de inicio”. La app protege mejor el progreso y funciona sin conexión.', installed: 'Instalada como app ✓',
+      installNote: 'Nota: la app instalada tiene su propio almacenamiento. Envía el progreso del navegador a la app una vez con el enlace de arriba.',
+      persistOk: 'Almacenamiento protegido en este dispositivo ✓', remindTitle: 'Protege tu progreso', remindD: 'Envíate una copia para no perder nada si el móvil borra sus datos.', later: 'Más tarde',
+      lastBackup: 'Última copia enviada:', never: 'nunca',
       backupBtn: 'Descargar copia', restoreBtn: 'Restaurar copia', restored: '¡Progreso restaurado!', restoreBad: 'Ese archivo no es una copia de lev.',
       disclaimer: 'Material de estudio no oficial, escrito a partir de los temas oficiales y la bibliografía de sept–dic 2026. No sustituye a los libros. Confirma siempre los detalles con la División de Enfermería.',
       cheer: ['¡Lo estás haciendo genial, {n}!', 'Cada lección te acerca más, {n}.', '¡Vamos, {n}! Sigue así.', 'Hebreo + enfermería = superpoder, {n}.']
@@ -299,6 +326,8 @@
           <p>${dl > 0 ? `<b>${dl}</b> ${t('daysTo')} · ` : ''}${pick(t('cheer')).replace('{n}', esc(S.name))}</p></div>
         ${mascot('happy', 'big bounce')}
       </section>
+      ${S.xp >= 30 && Date.now() - (S.lastBackup || 0) > 3 * 864e5 && Date.now() > (S.remindAfter || 0) ? `<section class="remind card pop">${img('phone', 'wiggle')}<div><b>${t('remindTitle')}</b><p>${t('remindD')}</p>
+        <div class="row"><button class="btn green small" onclick="A.share()">${t('shareBtn')}</button><button class="btn ghost small" onclick="A.remindLater()">${t('later')}</button></div></div></section>` : ''}
       <a class="sim-cta tilt" href="#/sim">${img('sim', 'wiggle')}<div><b>${t('simTitle')}</b><span>${S.lang === 'es' ? `${Object.keys(S.sims).length} de ${NX.sims.length} casos hechos · practica para el 18/11` : `${Object.keys(S.sims).length} of ${NX.sims.length} cases done · practice for 18/11`}</span></div><span class="go">→</span></a>
       ${NX.modules.map((m, u) => {
         const col = UNIT_COLORS[u % UNIT_COLORS.length];
@@ -786,12 +815,14 @@
     m.badges = [...new Set([...(a.badges || []), ...(b.badges || [])])]; m.wrong = [...new Set([...(a.wrong || []), ...(b.wrong || [])])];
     m.stats = {}; for (const k of new Set([...Object.keys(a.stats || {}), ...Object.keys(b.stats || {})])) { const x = (a.stats || {})[k], y = (b.stats || {})[k]; m.stats[k] = !x ? y : !y ? x : x.n >= y.n ? x : y; }
     m.sims = {}; for (const k of new Set([...Object.keys(a.sims || {}), ...Object.keys(b.sims || {})])) { const x = (a.sims || {})[k] || {}, y = (b.sims || {})[k] || {}; m.sims[k] = { best: Math.max(x.best || 0, y.best || 0), stars: Math.max(x.stars || 0, y.stars || 0) }; }
+    m.lastBackup = Math.max(a.lastBackup || 0, b.lastBackup || 0);
     m.planStart = [a.planStart, b.planStart].filter(Boolean).sort()[0] || today();
     if ((a.last || '') !== (b.last || '')) { const l = (a.last || '') > (b.last || '') ? a : b; m.last = l.last; m.streak = l.streak; } else m.streak = Math.max(a.streak || 0, b.streak || 0);
     m.daily = (a.daily || {}).d === (b.daily || {}).d ? { d: a.daily.d, xp: Math.max(a.daily.xp, b.daily.xp) } : ((a.daily || {}).d || '') > ((b.daily || {}).d || '') ? a.daily : b.daily;
     return m;
   }
   function backupDownload() {
+    S.lastBackup = Date.now(); save();
     const blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `lev-progress-${S.name.toLowerCase()}-${today()}.json`; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
@@ -802,6 +833,61 @@
       const data = JSON.parse(txt); if (typeof data !== 'object' || !('xp' in data)) throw new Error('not a backup');
       S = merge(S, data); save(); toast(t('restored'), 'check'); route();
     }).catch(() => toast(t('restoreBad'), 'lock'));
+  }
+
+  /* ---------- move progress between devices without an account: a link (and QR) that carries the progress ---------- */
+  const toB64u = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const fromB64u = str => { const b = atob(str.replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+  async function packProgress() {
+    const slim = JSON.parse(JSON.stringify(S));
+    for (const k in slim) if (JSON.stringify(slim[k]) === JSON.stringify(def[k])) delete slim[k];
+    const raw = new TextEncoder().encode(JSON.stringify(slim));
+    if ('CompressionStream' in window) {
+      const z = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
+      return 'z' + toB64u(z);
+    }
+    return 'j' + toB64u(raw);
+  }
+  async function unpackProgress(code) {
+    const bytes = fromB64u(code.slice(1));
+    const txt = code[0] === 'z' ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text() : new TextDecoder().decode(bytes);
+    const d = JSON.parse(txt); if (typeof d !== 'object' || d === null) throw new Error('bad'); return d;
+  }
+  const transferUrl = async () => `${location.origin}${location.pathname}#/import/${await packProgress()}`;
+  async function shareProgress() {
+    const url = await transferUrl(); S.lastBackup = Date.now(); save(); refreshCloudBox();
+    const banner = document.querySelector('.remind'); if (banner) banner.remove();
+    if (navigator.share) { try { await navigator.share({ title: 'lev.', text: t('shareText'), url }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+    try { await navigator.clipboard.writeText(url); toast(t('linkCopied'), 'check'); } catch (e) { prompt(t('copyManual'), url); }
+  }
+  async function showQR() {
+    const box = $('#qrbox'); if (!box) return;
+    const url = await transferUrl();
+    if (url.length > 2300) { box.innerHTML = `<p class="fine">${t('qrBig')}</p>`; return; }
+    if (!window.QRCode) await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); }).catch(() => null);
+    if (!window.QRCode) { box.innerHTML = `<p class="fine">${t('qrBig')}</p>`; return; }
+    box.innerHTML = `<div id="qr" class="qr"></div><p class="fine">${t('qrHelp')}</p>`;
+    try { new QRCode($('#qr'), { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L }); S.lastBackup = Date.now(); save(); }
+    catch (e) { box.innerHTML = `<p class="fine">${t('qrBig')}</p>`; }
+  }
+  let pendingImport = null;
+  R.import = async code => {
+    try { pendingImport = await unpackProgress(code || ''); } catch (e) { pendingImport = null; }
+    if (!pendingImport) { toast(t('importBad'), 'lock'); location.replace('#/'); return; }
+    const d = pendingImport, lessons = Object.keys(d.done || {}).length, sims = Object.keys(d.sims || {}).length;
+    view(`<section class="card center-card">${img('mary', 'head-img float')}<h1>${t('importTitle')}</h1><p>${t('importD')}</p>
+      <div class="pstats"><div class="card">${img('gem')}<b>${d.xp || 0}</b><small>XP</small></div><div class="card">${img('books')}<b>${lessons}</b><small>${t('lessons')}</small></div><div class="card">${img('sim')}<b>${sims}</b><small>${t('simTitle')}</small></div></div>
+      <div class="row"><button class="btn green" onclick="A.mergeImport()">${t('mergeBtn')}</button><a class="btn ghost" href="#/">${t('cancel')}</a></div></section>`);
+  };
+  let installEvt = null, persisted = false;
+  const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; refreshCloudBox(); });
+  function installRow() {
+    if (standalone()) return `<p>📲 ${t('installed')}</p>`;
+    if (installEvt) return `<div class="row"><button class="btn green" onclick="A.install()">📲 ${t('installBtn')}</button></div><p class="fine">${t('installNote')}</p>`;
+    if (isIOS()) return `<p class="muted">📲 ${t('installIOS')}</p><p class="fine">${t('installNote')}</p>`;
+    return '';
   }
 
   const CLOUD = window.NX_CLOUD || null;
@@ -845,8 +931,11 @@
   }
   function schedulePush() { clearTimeout(pushTimer); pushTimer = setTimeout(cloudPush, 2500); }
   function cloudBox() {
-    const backup = `<div class="row"><button class="btn blue" onclick="A.backup()">${img('check')} ${t('backupBtn')}</button>
-      <label class="btn ghost">${t('restoreBtn')}<input type="file" accept="application/json,.json" hidden onchange="A.restore(this.files[0])"></label></div>`;
+    const transfer = `<div class="row"><button class="btn green" onclick="A.share()">${img('phone')} ${t('shareBtn')}</button><button class="btn blue" onclick="A.qr()">${t('qrBtn')}</button></div>
+      <div id="qrbox"></div>
+      <p class="fine">${t('lastBackup')} ${S.lastBackup ? new Date(S.lastBackup).toLocaleString() : t('never')}${persisted ? ' · ' + t('persistOk') : ''}</p>`;
+    const backup = `<div class="row"><button class="btn ghost small" onclick="A.backup()">${t('backupBtn')}</button>
+      <label class="btn ghost small">${t('restoreBtn')}<input type="file" accept="application/json,.json" hidden onchange="A.restore(this.files[0])"></label></div>`;
     let top;
     if (!CLOUD) top = `<p class="muted">${t('localOnly')}</p>`;
     else if (!cloud.ready) top = `<p class="muted">${cloud.err ? '⚠ ' + esc(cloud.err) : t('cloudLoading')}</p>`;
@@ -857,7 +946,7 @@
       <div class="row"><button class="btn blue" onclick="A.googleIn()">G&nbsp; ${t('googleBtn')}</button></div>
       <form class="row" onsubmit="A.emailIn(this.email.value);return false"><input name="email" type="email" required placeholder="${t('emailPh')}" autocomplete="email"><button class="btn green">${t('emailBtn')}</button></form>
       ${cloud.err ? `<p class="fine">⚠ ${esc(cloud.err)}</p>` : ''}`;
-    return top + `<hr>${backup}`;
+    return top + `<hr>${transfer}${installRow() ? '<hr>' + installRow() : ''}<hr>${backup}`;
   }
   function refreshCloudBox() { const b = $('#cloudbox'); if (b) b.innerHTML = cloudBox(); }
 
@@ -865,7 +954,7 @@
   function route() {
     stopTimer(); stopVoice(); cancelAnimationFrame(ecgRAF);
     const [, page, a, b] = (location.hash || '#/').split('/');
-    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', plan: 'plan', exam: 'exam', me: 'me' }[page || ''] || 'learn';
+    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
     document.querySelectorAll('[data-nav]').forEach(x => x.classList.toggle('active', x.dataset.nav === tab));
     $('#app').classList.toggle('wide', tab !== 'learn' && tab !== 'me');
     (R[page] || R.learn)(a, b);
@@ -906,7 +995,10 @@
     setLang: l => { S.lang = l; save(); route(); },
     setOpt: (k, v) => { S[k] = v; save(); route(); },
     reset: () => { if (confirm(t('resetQ'))) { S = Object.assign({}, def, { lang: S.lang, name: S.name, planStart: today() }); save(); route(); } },
-    backup: backupDownload, restore: backupRestore,
+    backup: backupDownload, restore: backupRestore, share: shareProgress, qr: showQR,
+    mergeImport: () => { if (!pendingImport) return; S = merge(S, pendingImport); pendingImport = null; save(); toast(t('imported'), 'party'); confetti(); location.hash = '#/'; },
+    install: async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice.catch(() => null); installEvt = null; refreshCloudBox(); },
+    remindLater: () => { S.remindAfter = Date.now() + 864e5; save(); route(); },
     googleIn: async () => { try { await cloud.A_.signInWithPopup(cloud.auth, new cloud.A_.GoogleAuthProvider()); } catch (e) { cloud.err = String(e.code || e.message || e); refreshCloudBox(); } },
     emailIn: async email => {
       try { await cloud.A_.sendSignInLinkToEmail(cloud.auth, email, { url: location.origin + location.pathname, handleCodeInApp: true }); try { localStorage.setItem('lev.email', email); } catch (e) { /* storage blocked */ } toast(t('emailSent'), 'check'); }
@@ -917,4 +1009,14 @@
   };
   route();
   cloudInit();
+  idb.get(KEY).then(v => {
+    if (!v) { save(); return; }
+    try {
+      const d = JSON.parse(v);
+      if ((d.updatedAt || 0) > (S.updatedAt || 0)) { S = merge(S, d); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage blocked */ } route(); }
+      else if ((S.updatedAt || 0) > (d.updatedAt || 0)) idb.set(KEY, JSON.stringify(S)); /* the IndexedDB copy is behind: catch it up */
+    } catch (e) { /* bad copy */ }
+  });
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => p || navigator.storage.persist()).then(p => { persisted = !!p; refreshCloudBox(); }).catch(() => { /* not supported */ });
+  if ('serviceWorker' in navigator && /^(https:|http:\/\/localhost)/.test(location.href)) navigator.serviceWorker.register('sw.js').catch(() => { /* offline support unavailable */ });
 })();
