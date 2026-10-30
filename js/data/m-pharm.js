@@ -1,0 +1,50 @@
+NX.addModule({
+  id: 'pharm', icon: '💊',
+  t: ['Clinical Pharmacology', 'Farmacología clínica'],
+  b: ['Safe medication management, high-alert drugs, key classes and antidotes (Nursing Drug Handbook, circular 239/2025).', 'Manejo seguro de medicamentos, fármacos de alto riesgo, grupos clave y antídotos (Nursing Drug Handbook, circular 239/2025).'],
+  exam: 'Clinical pharmacology',
+  lessons: [
+    { t: ['Medication safety', 'Seguridad en la medicación'],
+      p: [
+        ['The rights: right patient, drug, dose, route, time, documentation, plus right reason and right response. Two identifiers every time.', 'Los correctos: paciente, fármaco, dosis, vía, hora, registro, y además indicación y respuesta correctas. Dos identificadores siempre.'],
+        ['In exam questions drugs appear as generic name with brand name in parentheses, for example “paracetamol (Acamol)”.', 'En el examen los fármacos aparecen con el nombre genérico y la marca entre paréntesis, p. ej. “paracetamol (Acamol)”.'],
+        ['High-alert drugs (circular 41/2013) need an independent double check: insulin, heparin and anticoagulants, concentrated potassium, opioids, chemotherapy.', 'Fármacos de alto riesgo (circular 41/2013) requieren doble verificación independiente: insulina, heparina y anticoagulantes, potasio concentrado, opioides, quimioterapia.'],
+        ['Circular 239/2025 covers medication management by nurses. Circular 96/2013: an order from a medical intern may be carried out when given in the name of a licensed physician.', 'La circular 239/2025 regula el manejo de la medicación por enfermería. Circular 96/2013: se puede cumplir la orden de un médico interno dada en nombre de un médico autorizado.']
+      ],
+      v: [['medication', 'medicamento', 'תרופה', 'trufa'], ['dose', 'dosis', 'מינון', 'minun'], ['side effect', 'efecto secundario', 'תופעת לוואי', 'tofa’at levai'], ['medical order', 'orden médica', 'הוראה רפואית', 'hora’a refu’it']] },
+    { t: ['Heart drugs', 'Fármacos cardiovasculares'],
+      p: [
+        ['ACE inhibitors (-pril, e.g. enalapril): dry cough, angioedema, high potassium. ARBs (-sartan): similar without the cough.', 'IECA (-pril, p. ej. enalapril): tos seca, angioedema, potasio alto. ARA II (-sartán): similares, sin tos.'],
+        ['Beta-blockers (-olol): check apical pulse and BP first; hold and report if HR is below 60 or SBP is low. They can mask signs of hypoglycemia.', 'Betabloqueantes (-olol): tomar pulso apical y PA antes; suspender y avisar si FC <60 o PAS baja. Pueden enmascarar la hipoglucemia.'],
+        ['Digoxin: check apical pulse for 1 full minute; hold if below 60. Toxicity: nausea, vomiting, visual halos (yellow-green), bradycardia. Low potassium increases toxicity.', 'Digoxina: pulso apical 1 minuto completo; suspender si <60. Toxicidad: náuseas, vómitos, halos visuales amarillo-verdosos, bradicardia. El potasio bajo aumenta la toxicidad.'],
+        ['Furosemide: loses potassium, can cause dehydration and hearing damage if given fast IV. Spironolactone saves potassium.', 'Furosemida: pierde potasio, puede deshidratar y dañar el oído si se da rápido IV. La espironolactona ahorra potasio.']
+      ],
+      v: [['pulse', 'pulso', 'דופק', 'dofek'], ['diuretic', 'diurético', 'משתן', 'mashten'], ['potassium', 'potasio', 'אשלגן', 'ashlagan'], ['sodium', 'sodio', 'נתרן', 'natran']] },
+    { t: ['Anticoagulants and antidotes', 'Anticoagulantes y antídotos'],
+      p: [
+        ['Heparin is monitored by aPTT; antidote protamine sulfate. Enoxaparin (Clexane) SC in the abdomen, do not expel the air bubble, do not rub.', 'La heparina se controla con TTPa; antídoto sulfato de protamina. Enoxaparina (Clexane) SC en el abdomen, sin expulsar la burbuja ni frotar.'],
+        ['Warfarin (Coumadin) is monitored by INR (usual target 2-3); antidote vitamin K. Teach a steady intake of green leafy vegetables.', 'La warfarina (Coumadin) se controla con INR (objetivo habitual 2-3); antídoto vitamina K. Enseñar un consumo estable de verduras de hoja verde.'],
+        ['Opioid overdose (pinpoint pupils, slow breathing): naloxone. Benzodiazepine overdose: flumazenil. Paracetamol overdose: N-acetylcysteine.', 'Sobredosis de opioides (miosis, respiración lenta): naloxona. Benzodiacepinas: flumazenil. Paracetamol: N-acetilcisteína.'],
+        ['Magnesium sulfate toxicity: calcium gluconate. Insulin overdose: glucose/glucagon.', 'Toxicidad por sulfato de magnesio: gluconato cálcico. Sobredosis de insulina: glucosa/glucagón.']
+      ],
+      v: [['bleeding', 'sangrado', 'דימום', 'dimum'], ['antidote', 'antídoto', 'נוגדן', 'nogdan'], ['blood clot', 'coágulo', 'קריש דם', 'krish dam']] },
+    { t: ['Pain, antibiotics and others', 'Dolor, antibióticos y otros'],
+      p: [
+        ['Opioids: check respiratory rate and sedation before giving; constipation is expected, so give a bowel regimen.', 'Opioides: valorar frecuencia respiratoria y sedación antes de administrar; el estreñimiento es esperable, pautar laxantes.'],
+        ['Paracetamol: max 4 g/day in healthy adults (lower in liver disease, alcohol use, low weight). Circular 223/2024 lets RNs with post-basic ER/ICU training decide on IV paracetamol for adults.', 'Paracetamol: máx. 4 g/día en adultos sanos (menos en hepatopatía, alcohol, bajo peso). La circular 223/2024 permite a enfermeras con posbásico de urgencias/UCI decidir paracetamol IV en adultos.'],
+        ['NSAIDs: GI bleeding and kidney risk; give with food. Aminoglycosides (gentamicin): kidney and ear toxicity, monitor levels. Vancomycin: infuse slowly to avoid flushing (“red man”).', 'AINE: riesgo de sangrado digestivo y renal; dar con comida. Aminoglucósidos (gentamicina): nefro y ototóxicos, vigilar niveles. Vancomicina: infusión lenta para evitar el rubor (“hombre rojo”).'],
+        ['Always ask about allergy before the first antibiotic dose, and observe for anaphylaxis (circular 204/2023: the RN gives IM epinephrine).', 'Pregunta siempre por alergias antes de la primera dosis de antibiótico y vigila la anafilaxia (circular 204/2023: la enfermera administra adrenalina IM).'],
+        ['Levothyroxine: morning, empty stomach. Metformin: hold around iodinated contrast per protocol (risk of lactic acidosis).', 'Levotiroxina: por la mañana en ayunas. Metformina: suspender en torno al contraste yodado según protocolo (riesgo de acidosis láctica).']
+      ],
+      v: [['painkiller', 'analgésico', 'משכך כאבים', 'meshakech ke’evim'], ['antibiotic', 'antibiótico', 'אנטיביוטיקה', 'antibiotika'], ['tablet', 'comprimido', 'כדור', 'kadur'], ['drip / infusion', 'goteo / infusión', 'עירוי', 'iruy']] }
+  ],
+  q: [
+    [1, 2, 'Before giving digoxin the nurse counts an apical pulse of 54/min. What should the nurse do?', 'Antes de dar digoxina la enfermera cuenta un pulso apical de 54/min. ¿Qué debe hacer?', ['Give the dose', 'Give half the dose', 'Hold the dose and notify the physician', 'Give it with food'], ['Dar la dosis', 'Dar media dosis', 'Suspender la dosis y avisar al médico', 'Darla con comida'], 'Hold digoxin when apical HR is below 60 and report.', 'Suspender la digoxina con FC apical <60 y avisar.'],
+    [1, 0, 'Which is the antidote for heparin?', '¿Cuál es el antídoto de la heparina?', ['Protamine sulfate', 'Vitamin K', 'Naloxone', 'Flumazenil'], ['Sulfato de protamina', 'Vitamina K', 'Naloxona', 'Flumazenil'], 'Protamine reverses heparin; vitamin K reverses warfarin.', 'La protamina revierte la heparina; la vitamina K, la warfarina.'],
+    [2, 3, 'A patient on enalapril reports swelling of the lips and tongue. Priority?', 'Un paciente con enalapril refiere hinchazón de labios y lengua. ¿Prioridad?', ['Reassure, it is a common harmless effect', 'Give the next dose with food', 'Document only', 'Stop the drug, assess the airway and call for help'], ['Tranquilizar, es frecuente e inocuo', 'Dar la siguiente dosis con comida', 'Solo documentar', 'Suspender el fármaco, valorar la vía aérea y pedir ayuda'], 'Angioedema is a life-threatening ACE-inhibitor reaction that can block the airway.', 'El angioedema es una reacción grave de los IECA que puede obstruir la vía aérea.'],
+    [2, 1, 'A patient on morphine has RR 8/min and is hard to wake. Which drug should be ready?', 'Un paciente con morfina tiene FR 8/min y despierta con dificultad. ¿Qué fármaco preparar?', ['Flumazenil', 'Naloxone', 'Atropine', 'Protamine'], ['Flumazenil', 'Naloxona', 'Atropina', 'Protamina'], 'Naloxone reverses opioid respiratory depression; support breathing first.', 'La naloxona revierte la depresión respiratoria por opioides; primero apoyar la ventilación.'],
+    [2, 2, 'Which INR is the usual therapeutic target for most patients on warfarin?', '¿Qué INR es el objetivo terapéutico habitual con warfarina?', ['0.8-1.2', '1.0-1.5', '2.0-3.0', '4.0-5.0'], 0, 'Most indications target INR 2-3; mechanical valves may be higher.', 'La mayoría de indicaciones buscan INR 2-3; las válvulas mecánicas pueden requerir más.'],
+    [3, 0, 'Which finding increases the risk of digoxin toxicity?', '¿Qué hallazgo aumenta el riesgo de toxicidad por digoxina?', ['Potassium 3.0 mEq/L', 'Sodium 140 mEq/L', 'Heart rate 80/min', 'Normal creatinine'], ['Potasio 3,0 mEq/L', 'Sodio 140 mEq/L', 'FC 80/min', 'Creatinina normal'], 'Hypokalemia increases digoxin toxicity, which is why diuretics that lose potassium need monitoring.', 'La hipopotasemia aumenta la toxicidad de la digoxina; por eso se vigilan los diuréticos que pierden potasio.'],
+    [3, 3, 'Concentrated potassium chloride is ordered. Which action is correct?', 'Se prescribe cloruro potásico concentrado. ¿Qué acción es correcta?', ['Give as IV push for speed', 'Give undiluted IM', 'Single-nurse check is enough', 'Dilute and infuse with a pump after an independent double check'], ['Bolo IV para mayor rapidez', 'IM sin diluir', 'Basta una sola enfermera', 'Diluir e infundir con bomba tras doble verificación independiente'], 'Potassium is a high-alert drug: never IV push, always diluted, infusion pump, double check.', 'El potasio es de alto riesgo: nunca en bolo, siempre diluido, con bomba y doble verificación.']
+  ]
+});

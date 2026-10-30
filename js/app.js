@@ -1,0 +1,820 @@
+/* lev. – Mary's nursing exam prep. Single-page app, no build step. Content lives in js/data/*.js */
+(() => {
+  'use strict';
+  const EXAM = new Date('2026-11-18T08:00:00+02:00');
+  const KEY = 'nurseil.v1';
+  const GOAL = 50;
+  const $ = s => document.querySelector(s);
+  const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const pick = a => a[Math.random() * a.length | 0];
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const today = () => new Date().toISOString().slice(0, 10);
+  const img = (n, c = '') => `<img src="img/${n}.png" alt="" class="${c}" draggable="false">`;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const UNIT_COLORS = ['#58cc02', '#1cb0f6', '#ce82ff', '#ff9600', '#ff4b4b', '#00cd9c', '#ff86d0', '#2b70c9', '#ffc800', '#7c5cff'];
+
+  /* ---------- state ---------- */
+  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, doseOk: 0, daily: { d: '', xp: 0 }, sims: {}, planStart: '' };
+  let S;
+  try { S = Object.assign({}, def, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = Object.assign({}, def); }
+  if (!S.planStart) S.planStart = today();
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage blocked: progress lives in memory */ } };
+
+  /* ---------- i18n ---------- */
+  const UI = {
+    en: {
+      learn: 'Learn', sim: 'Sim Ward', practice: 'Practice', plan: 'My plan', exam: 'The exam', me: 'Profile',
+      morning: 'Good morning', evening: 'Good evening', day: 'Hi',
+      daysTo: 'days to your exam', examDay: 'Exam day! You’ve got this.', examDone: 'Exam done. So proud of you!',
+      unit: 'Unit', start: 'START', continue: 'Continue', check: 'Check', skip: 'Skip', next: 'Next', finish: 'Finish',
+      correct: ['Nicely done!', 'Excellent!', 'You nailed it!', 'Perfect!', '¡Muy bien!'], wrongT: 'Correct answer:', why: 'Why',
+      newWord: 'New word', tapPairs: 'Tap the matching pairs', listenQ: 'What do you hear?', meanHeb: 'Which is the Hebrew for', whatMeans: 'What does this mean?', letterQ: 'Which letter is this?',
+      lessonDone: 'Lesson complete!', quizDone: 'Unit checkpoint passed!', totalXp: 'Total XP', accuracy: 'Accuracy', time: 'Time',
+      outHearts: 'Out of hearts', outHeartsD: 'Mistakes are how we learn. Take a breath and try again.', retry: 'Try again', quit: 'Quit',
+      quitQ: 'Quit? You’ll lose this lesson’s progress.', keep: 'Keep learning', unitQuiz: 'Unit checkpoint',
+      streak: 'Day streak', dailyGoal: 'Daily goal', wod: 'Word of the day', listen: 'Listen', badges: 'Badges',
+      simTitle: 'Simulation Ward', simIntro: 'Your exam is a virtual-reality patient-care simulation. Manage these patients step by step: safety, assessment, action, communication, documentation. The monitor reacts to your choices.',
+      patient: 'Patient', yrs: 'yrs', skills: { safety: 'Safety', assess: 'Assessment', act: 'Intervention', comm: 'Communication', doc: 'Documentation' },
+      debrief: 'Debrief', best: 'Best answer', yourPick: 'Your choice', again: 'Play again', backWard: 'Back to the ward', pts: 'pts',
+      flash: 'Flashcards', flashD: 'Spaced repetition. Your language on the front, Hebrew on the back.', match: 'Match Madness', matchD: 'Pair Hebrew words with their meaning against the clock.',
+      speed: 'Speed Round', speedD: '60 seconds. Combos give double points!', dose: 'Dosage Lab', doseD: 'Endless calculations with worked solutions.',
+      mock: 'Mock exam', mockD: 'Timed, forward-only, adaptive. No feedback until the end, like a real exam.', review: 'Fix mistakes', reviewD: 'Retry every question you got wrong.',
+      noWrong: 'No mistakes to fix. Amazing!', deck: 'Deck', all: 'All units', mastered: 'mastered', reveal: 'Tap to flip', know: 'Got it', notyet: 'Again',
+      answer: 'Your answer', steps: 'Solution', length: 'Length', questions: 'questions', byTopic: 'By topic', score: 'Score', play: 'Play', record: 'Record',
+      planTitle: 'Mary’s sprint plan', planD: 'One focused day at a time. Tick each day when you finish it.', today: 'Today', hebDaily: '10 min Hebrew flashcards',
+      settings: 'Settings', name: 'Name', language: 'Language', hints: 'Hebrew hints in lessons', sound: 'Sound effects', reset: 'Reset all progress', resetQ: 'Erase all progress on this device?',
+      on: 'On', off: 'Off', level: 'Level', lessons: 'lessons', of: 'of', timeUp: 'Time is up',
+      readAloud: 'Read aloud', autoRead: 'Read questions aloud automatically', auto: 'Auto', speed2: 'Reading speed', slow: 'Slow', normal: 'Normal',
+      testAudio: 'Test audio', audioHe: 'Hebrew: recorded clips', voiceFound: 'voice', voiceNone: 'no voice on this device',
+      noVoice: 'This device has no {l} voice. Add one in system settings → Accessibility → Spoken content.',
+      disclaimer: 'Unofficial study aid, written from the official MOH topic list and the Sept–Dec 2026 reading list. It does not replace the textbooks. Always check details with the Nursing Division.',
+      cheer: ['You’re doing great, {n}!', 'Every lesson is a step closer, {n}.', '¡Vamos, {n}! Keep going.', 'Hebrew + nursing = superpower, {n}.']
+    },
+    es: {
+      learn: 'Aprender', sim: 'Simulación', practice: 'Practicar', plan: 'Mi plan', exam: 'El examen', me: 'Perfil',
+      morning: 'Buenos días', evening: 'Buenas noches', day: 'Hola',
+      daysTo: 'días para tu examen', examDay: '¡Hoy es el examen! Tú puedes.', examDone: 'Examen hecho. ¡Qué orgullo!',
+      unit: 'Unidad', start: 'EMPEZAR', continue: 'Continuar', check: 'Comprobar', skip: 'Saltar', next: 'Siguiente', finish: 'Terminar',
+      correct: ['¡Muy bien!', '¡Excelente!', '¡Lo clavaste!', '¡Perfecto!', 'Nicely done!'], wrongT: 'Respuesta correcta:', why: 'Por qué',
+      newWord: 'Palabra nueva', tapPairs: 'Toca las parejas', listenQ: '¿Qué escuchas?', meanHeb: '¿Cuál es el hebreo de', whatMeans: '¿Qué significa?', letterQ: '¿Qué letra es?',
+      lessonDone: '¡Lección completada!', quizDone: '¡Control de unidad superado!', totalXp: 'XP total', accuracy: 'Precisión', time: 'Tiempo',
+      outHearts: 'Sin corazones', outHeartsD: 'De los errores se aprende. Respira y vuelve a intentarlo.', retry: 'Reintentar', quit: 'Salir',
+      quitQ: '¿Salir? Perderás el progreso de esta lección.', keep: 'Seguir aprendiendo', unitQuiz: 'Control de unidad',
+      streak: 'Racha', dailyGoal: 'Meta diaria', wod: 'Palabra del día', listen: 'Escuchar', badges: 'Insignias',
+      simTitle: 'Sala de simulación', simIntro: 'Tu examen es una simulación de cuidado del paciente en realidad virtual. Gestiona estos pacientes paso a paso: seguridad, valoración, intervención, comunicación y documentación. El monitor reacciona a tus decisiones.',
+      patient: 'Paciente', yrs: 'años', skills: { safety: 'Seguridad', assess: 'Valoración', act: 'Intervención', comm: 'Comunicación', doc: 'Documentación' },
+      debrief: 'Análisis', best: 'Mejor respuesta', yourPick: 'Tu elección', again: 'Jugar otra vez', backWard: 'Volver a la sala', pts: 'pts',
+      flash: 'Tarjetas', flashD: 'Repetición espaciada. Tu idioma delante, hebreo detrás.', match: 'Parejas locas', matchD: 'Une palabras hebreas con su significado contra reloj.',
+      speed: 'Ronda rápida', speedD: '60 segundos. ¡Los combos dan doble puntuación!', dose: 'Laboratorio de dosis', doseD: 'Cálculos sin fin con solución paso a paso.',
+      mock: 'Simulacro', mockD: 'Con tiempo, sin volver atrás, adaptativo. Sin correcciones hasta el final, como un examen real.', review: 'Corregir errores', reviewD: 'Repite las preguntas que fallaste.',
+      noWrong: 'No hay errores que corregir. ¡Increíble!', deck: 'Mazo', all: 'Todas las unidades', mastered: 'dominadas', reveal: 'Toca para girar', know: 'La sé', notyet: 'Otra vez',
+      answer: 'Tu respuesta', steps: 'Solución', length: 'Longitud', questions: 'preguntas', byTopic: 'Por tema', score: 'Puntuación', play: 'Jugar', record: 'Récord',
+      planTitle: 'Plan intensivo de Mary', planD: 'Un día enfocado cada vez. Marca cada día al terminarlo.', today: 'Hoy', hebDaily: '10 min de tarjetas de hebreo',
+      settings: 'Ajustes', name: 'Nombre', language: 'Idioma', hints: 'Pistas en hebreo en las lecciones', sound: 'Efectos de sonido', reset: 'Borrar todo el progreso', resetQ: '¿Borrar todo el progreso de este dispositivo?',
+      on: 'Sí', off: 'No', level: 'Nivel', lessons: 'lecciones', of: 'de', timeUp: 'Se acabó el tiempo',
+      readAloud: 'Leer en voz alta', autoRead: 'Leer las preguntas en voz alta automáticamente', auto: 'Auto', speed2: 'Velocidad de lectura', slow: 'Lenta', normal: 'Normal',
+      testAudio: 'Probar audio', audioHe: 'Hebreo: grabaciones', voiceFound: 'voz', voiceNone: 'no hay voz en este dispositivo',
+      noVoice: 'Este dispositivo no tiene voz en {l}. Añádela en Ajustes → Accesibilidad → Contenido leído.',
+      disclaimer: 'Material de estudio no oficial, escrito a partir de los temas oficiales y la bibliografía de sept–dic 2026. No sustituye a los libros. Confirma siempre los detalles con la División de Enfermería.',
+      cheer: ['¡Lo estás haciendo genial, {n}!', 'Cada lección te acerca más, {n}.', '¡Vamos, {n}! Sigue así.', 'Hebreo + enfermería = superpoder, {n}.']
+    }
+  };
+  const t = k => UI[S.lang][k] ?? UI.en[k] ?? k;
+  const L = o => (o && (o[S.lang] || o.en)) || '';
+  const L2 = a => S.lang === 'es' ? a[1] : a[0];
+  const meaning = v => v[S.lang] || v.en;
+  const hint = s => s.replace(/\[\[(.+?)\|(.+?)\|(.+?)\]\]/g, (m, w, he, tr) => S.hints
+    ? `<span class="hint" data-say="${he}"><b>${w}</b> <span class="he" lang="he" dir="rtl">${he}</span> <i>${tr}</i></span>` : `<b>${w}</b>`);
+  const modById = id => NX.modules.find(m => m.id === id);
+  const daysLeft = () => Math.ceil((EXAM - Date.now()) / 864e5);
+
+  /* ---------- sound, speech, confetti ---------- */
+  let AC;
+  function tone(seq) {
+    if (!S.sound) return;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+      let t0 = AC.currentTime;
+      seq.forEach(([f, d, type = 'sine', v = .14]) => {
+        const o = AC.createOscillator(), g = AC.createGain();
+        o.type = type; o.frequency.value = f; g.gain.setValueAtTime(v, t0); g.gain.exponentialRampToValueAtTime(.0008, t0 + d);
+        o.connect(g).connect(AC.destination); o.start(t0); o.stop(t0 + d); t0 += d * .75;
+      });
+    } catch (e) { /* audio unavailable */ }
+  }
+  const SFX = {
+    ok: () => tone([[784, .1], [1175, .22]]), no: () => tone([[220, .16, 'square', .06], [165, .26, 'square', .06]]),
+    win: () => tone([[523, .1], [659, .1], [784, .1], [1047, .35]]), tap: () => tone([[520, .05, 'triangle', .05]]),
+    alarm: () => tone([[960, .14, 'square', .05], [720, .14, 'square', .05], [960, .14, 'square', .05], [720, .14, 'square', .05]]),
+    pop: () => tone([[660, .06, 'triangle', .07], [990, .08, 'triangle', .07]])
+  };
+  /* ---------- voice: pre-recorded Hebrew clips + the device's voices for English/Spanish ----------
+     Text is split into Hebrew and non-Hebrew runs and played as one queue, so a sentence like
+     "chest pain כאב בחזה that may spread…" is read in English with the Hebrew in a native voice. */
+  const HEB = /[֐-׿]/;
+  const HEB_RUN = /([֐-׿][֐-׿\s"'’\-/]*[֐-׿]\??|[֐-׿])/;
+  const NOVELTY = /Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Wobble|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Zarvox|Fred|Junior|Ralph|Kathy|Grand(ma|pa)|Rocko|Sandy|Shelley|Reed|Eddy|Flo\b/;
+  let voices = [];
+  const loadVoices = () => { try { voices = speechSynthesis.getVoices(); } catch (e) { voices = []; } };
+  loadVoices(); try { speechSynthesis.addEventListener('voiceschanged', loadVoices); } catch (e) { /* no speech API */ }
+  function voiceFor(lang) {
+    /* on-device voices first: Chrome's network "Google" voices can stop mid-sentence */
+    const score = v => (v.localService ? 4 : 0) + (/Premium|Enhanced|Siri|Natural/.test(v.name) ? 2 : 0) + (/Samantha|Alex|Daniel|Karen|Moira|M[oó]nica|Paulina|Jorge|Juan|Diego|Carmit/.test(v.name) ? 2 : 0) + (/Google|Microsoft/.test(v.name) ? 1 : 0) - (NOVELTY.test(v.name) ? 9 : 0);
+    return voices.filter(v => v.lang.replace('_', '-').toLowerCase().startsWith(lang)).sort((a, b) => score(b) - score(a))[0] || null;
+  }
+  let vq = [], vtok = 0, vAudio = null, warned = {};
+  function stopVoice() {
+    vtok++; vq = []; document.body.classList.remove('speaking');
+    try { speechSynthesis.cancel(); } catch (e) { /* no speech API */ }
+    if (vAudio) { vAudio.pause(); vAudio = null; }
+  }
+  function segments(text, lang) {
+    const out = [];
+    String(text).replace(/\s+/g, ' ').split(HEB_RUN).forEach(part => {
+      if (!part || !part.trim()) return;
+      if (HEB.test(part)) out.push({ he: part.trim() });
+      else part.split(/(?<=[.!?:;])\s+/).forEach(s => { if (/[\p{L}\p{N}]/u.test(s)) out.push({ text: s.trim(), lang }); });
+    });
+    return out;
+  }
+  function play(segs) {
+    stopVoice(); if (!segs.length) return;
+    vq = segs; const tok = vtok; document.body.classList.add('speaking');
+    setTimeout(() => nextSeg(tok), 60); /* Chrome drops an utterance queued right after cancel() */
+  }
+  function nextSeg(tok) {
+    if (tok !== vtok) return;
+    const s = vq.shift();
+    if (!s) return document.body.classList.remove('speaking');
+    if (s.he) {
+      const id = NX.audio[s.he] ?? NX.audio[s.he.replace(/\?$/, '')] ?? NX.audio[s.he + '?'];
+      if (id) {
+        const a = new Audio(`audio/he/${id}.m4a`); vAudio = a; a.playbackRate = S.rate < 1 ? .9 : 1;
+        a.onended = a.onerror = () => nextSeg(tok); a.play().catch(() => nextSeg(tok)); return;
+      }
+      return utter(s.he, 'he', tok);
+    }
+    utter(s.text, s.lang, tok);
+  }
+  function utter(text, lang, tok) {
+    const v = 'speechSynthesis' in window ? voiceFor(lang) : null;
+    if (!v) { if (!warned[lang]) { warned[lang] = 1; toast(t('noVoice').replace('{l}', { he: 'עברית', en: 'English', es: 'español' }[lang]), 'speaker'); } return nextSeg(tok); }
+    const u = new SpeechSynthesisUtterance(text); u.voice = v; u.lang = v.lang; u.rate = lang === 'he' ? .85 : (S.rate || 1);
+    u.onend = u.onerror = () => nextSeg(tok);
+    speechSynthesis.speak(u);
+  }
+  /* speak(): one string, any language. readEl(): what a card shows, minus transliterations, key hints and images. */
+  const speak = text => play(segments(text, S.lang));
+  const textOf = el => { if (!el) return ''; const c = el.cloneNode(true); c.querySelectorAll('i, kbd, img, svg, .spk, .readbtn').forEach(x => x.remove()); return c.textContent; };
+  const htmlText = h => { const d = document.createElement('div'); d.innerHTML = h; return textOf(d); };
+  const readParts = parts => play(parts.filter(Boolean).flatMap(p => segments(p, S.lang)));
+  const readEl = (...els) => readParts(els.flat().map(textOf));
+  const readChoices = root => [...root.querySelectorAll('.choice')].map((b, k) => `${k + 1}, ${textOf(b)}`);
+  /* iOS/Safari only allow audio after a user gesture: prime both channels on the first tap */
+  document.addEventListener('pointerdown', () => {
+    try { const a = new Audio('audio/he/h0.m4a'); a.volume = 0; a.play().catch(() => { }); } catch (e) { /* no audio */ }
+    try { speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch (e) { /* no speech API */ }
+  }, { once: true });
+  function confetti() {
+    if (reduced) return;
+    const c = $('#confetti'), x = c.getContext('2d'); c.width = innerWidth; c.height = innerHeight;
+    const P = Array.from({ length: 170 }, () => ({ x: innerWidth / 2 + (Math.random() - .5) * 200, y: innerHeight * .35, vx: (Math.random() - .5) * 16, vy: -Math.random() * 16 - 5, s: 7 + Math.random() * 7, r: Math.random() * 6, vr: (Math.random() - .5) * .35, c: pick(UNIT_COLORS) }));
+    let f = 0;
+    (function loop() {
+      x.clearRect(0, 0, c.width, c.height);
+      P.forEach(p => { p.vy += .38; p.x += p.vx; p.y += p.vy; p.vx *= .99; p.r += p.vr; x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); x.restore(); });
+      if (++f < 200) requestAnimationFrame(loop); else x.clearRect(0, 0, c.width, c.height);
+    })();
+  }
+  function countUp(el, to, ms = 900) {
+    if (!el) return; const t0 = performance.now();
+    (function step(n) { const k = Math.min(1, (n - t0) / ms); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))) + (el.dataset.suffix || ''); if (k < 1) requestAnimationFrame(step); })(t0);
+  }
+  function toast(msg, image) {
+    const el = document.createElement('div'); el.className = 'toast'; el.innerHTML = `${image ? img(image) : ''}<span>${msg}</span>`;
+    document.body.appendChild(el); setTimeout(() => el.classList.add('out'), 2400); setTimeout(() => el.remove(), 2800);
+  }
+
+  /* ---------- mascot: Lev the heart (לב = heart) ---------- */
+  /* each instance gets its own gradient id: a shared id breaks when the first copy sits in a hidden element */
+  let levN = 0;
+  const mascot = (mood = 'happy', cls = '') => { const gid = `lg${++levN}`; return `<svg class="lev ${mood} ${cls}" viewBox="0 0 120 120" aria-hidden="true">
+    <defs><radialGradient id="${gid}" cx="40%" cy="30%" r="75%"><stop offset="0" stop-color="#ff7a8a"/><stop offset="1" stop-color="#e5243b"/></radialGradient></defs>
+    <ellipse cx="60" cy="112" rx="30" ry="5" class="lev-shadow"/>
+    <g class="lev-body">
+      <path d="M60 104C30 82 10 64 10 40 10 24 22 12 38 12c10 0 17 5 22 13 5-8 12-13 22-13 16 0 28 12 28 28 0 24-20 42-50 64z" fill="url(#${gid})" stroke="#b5162b" stroke-width="3"/>
+      <g class="lev-cap"><path d="M36 20 L60 6 L84 20 L80 30 L40 30 Z" fill="#fff" stroke="#cfd8e3" stroke-width="2"/><rect x="56" y="12" width="8" height="14" rx="2" fill="#ff4b4b"/><rect x="53" y="15" width="14" height="8" rx="2" fill="#ff4b4b"/></g>
+      <g class="lev-eyes"><ellipse cx="44" cy="52" rx="9" ry="11" fill="#fff"/><ellipse cx="76" cy="52" rx="9" ry="11" fill="#fff"/>
+        <circle cx="46" cy="54" r="5" fill="#1f2a37"/><circle cx="78" cy="54" r="5" fill="#1f2a37"/><circle cx="48" cy="51" r="1.8" fill="#fff"/><circle cx="80" cy="51" r="1.8" fill="#fff"/></g>
+      <ellipse cx="34" cy="68" rx="6" ry="3.5" fill="#ff9aa8" opacity=".8"/><ellipse cx="86" cy="68" rx="6" ry="3.5" fill="#ff9aa8" opacity=".8"/>
+      <path class="lev-mouth" d="${mood === 'sad' ? 'M50 76 Q60 68 70 76' : 'M48 70 Q60 84 72 70'}" fill="${mood === 'sad' ? 'none' : '#7a0f1e'}" stroke="#7a0f1e" stroke-width="3" stroke-linecap="round"/>
+    </g></svg>`; };
+
+  /* ---------- progress ---------- */
+  const BADGES = [
+    ['first', 'seed', 'First lesson', 'Primera lección', () => Object.keys(S.done).length >= 1],
+    ['ten', 'books', '10 lessons', '10 lecciones', () => Object.keys(S.done).length >= 10],
+    ['sim1', 'sim', 'First simulation', 'Primera simulación', () => Object.keys(S.sims).length >= 1],
+    ['sim3', 'steth', '3-star nurse', 'Enfermera 3 estrellas', () => Object.values(S.sims).some(s => s.stars === 3)],
+    ['simAll', 'crown', 'Every ward case', 'Todos los casos', () => Object.keys(S.sims).length >= NX.sims.length],
+    ['q100', 'hundred', '100 answers', '100 respuestas', () => S.answered >= 100],
+    ['streak7', 'fire', '7-day streak', '7 días seguidos', () => S.streak >= 7],
+    ['dose10', 'dose', '10 doses right', '10 dosis bien', () => S.doseOk >= 10],
+    ['heb50', 'heb', '50 Hebrew words', '50 palabras', () => Object.values(S.box).filter(b => b >= 4).length >= 50],
+    ['mock', 'trophy', 'Mock exam done', 'Simulacro hecho', () => !!S.best.mock]
+  ];
+  function touch(xp) {
+    const d = today();
+    if (S.last !== d) { const y = new Date(Date.now() - 864e5).toISOString().slice(0, 10); S.streak = S.last === y ? S.streak + 1 : 1; S.last = d; }
+    if (S.daily.d !== d) S.daily = { d, xp: 0 };
+    const before = S.daily.xp;
+    S.xp += xp || 0; S.daily.xp += xp || 0;
+    if (before < GOAL && S.daily.xp >= GOAL) setTimeout(() => toast(S.lang === 'es' ? '¡Meta diaria cumplida!' : 'Daily goal reached!', 'target'), 600);
+    BADGES.forEach(b => { if (!S.badges.includes(b[0]) && b[4]()) { S.badges.push(b[0]); setTimeout(() => { toast(L2([b[2], b[3]]), b[1]); SFX.pop(); }, 900); } });
+    save(); chrome();
+  }
+  const level = () => Math.floor(Math.sqrt(S.xp / 40)) + 1;
+  function stat(m, ok) { const s = S.stats[m] || (S.stats[m] = { ok: 0, n: 0 }); s.n++; if (ok) s.ok++; S.answered++; }
+  const nodeKey = (m, i) => `${m}-${i}`;
+  function nextNode() {
+    for (const m of NX.modules) { for (let i = 0; i < m.lessons.length; i++) if (!S.done[nodeKey(m.id, i)]) return [m.id, i]; if (!S.done[nodeKey(m.id, 'q')]) return [m.id, 'q']; }
+    return null;
+  }
+
+  /* ---------- chrome: sidebar, mobile bar, rail ---------- */
+  function chrome() {
+    document.documentElement.lang = S.lang;
+    $('#logoMark').innerHTML = mascot('happy', 'mini');
+    document.querySelectorAll('[data-nav]').forEach(a => { a.querySelector('span').textContent = a.dataset.nav === 'me' ? S.name : t(a.dataset.nav); });
+    const dl = daysLeft();
+    const stats = `<span class="stat fire ${S.last === today() ? 'lit' : ''}">${img('fire')}<b>${S.streak}</b></span><span class="stat">${img('gem')}<b>${S.xp}</b></span><span class="stat">${img('calendar')}<b>${Math.max(0, dl)}</b></span>`;
+    $('#mbar').innerHTML = `<a class="logo" href="#/"><span class="logo-mark">${mascot('happy', 'mini')}</span></a>${stats}<a href="#/me" class="avatar">${img('mary')}</a>`;
+    const pct = Math.min(100, Math.round(100 * (S.daily.d === today() ? S.daily.xp : 0) / GOAL));
+    const w = wordOfDay();
+    $('#rail').innerHTML = `
+      <div class="stats-row">${stats}</div>
+      <section class="card countdown tilt">
+        ${img('mary', 'float')}<div><small>${esc(S.name)} · 18.11.2026</small>
+        <b class="big">${dl > 0 ? dl : dl === 0 ? '🎉' : '✓'}</b><span>${dl > 0 ? t('daysTo') : dl === 0 ? t('examDay') : t('examDone')}</span></div>
+      </section>
+      <section class="card goal"><h3>${img('target')} ${t('dailyGoal')}</h3>
+        <div class="goalbar"><i style="width:${pct}%"></i><span>${S.daily.d === today() ? S.daily.xp : 0} / ${GOAL} XP</span></div></section>
+      <section class="card wod"><h3>${img('speaker')} ${t('wod')}</h3>
+        <button class="wod-word" data-say="${w.he}"><span class="he" lang="he" dir="rtl">${w.he}</span><i>${esc(w.tr)}</i><b>${esc(meaning(w))}</b></button></section>
+      <section class="card"><h3>${img('trophy')} ${t('badges')}</h3><div class="mini-badges">${BADGES.map(b => `<span class="${S.badges.includes(b[0]) ? 'on' : ''}" title="${esc(L2([b[2], b[3]]))}">${img(b[1])}</span>`).join('')}</div></section>
+      <p class="fine">${t('disclaimer')}</p>`;
+  }
+  function wordOfDay() { const pool = NX.vocab.filter(v => !v.alpha); return pool[Math.floor(Date.now() / 864e5) % pool.length]; }
+
+  const view = html => { const a = $('#app'); a.innerHTML = html; a.classList.remove('enter'); void a.offsetWidth; a.classList.add('enter'); window.scrollTo(0, 0); };
+  let timer = null; const stopTimer = () => { if (timer) clearInterval(timer); timer = null; };
+
+  /* ---------- LEARN: the path ---------- */
+  const R = {};
+  R.learn = () => {
+    const h = new Date().getHours(), dl = daysLeft();
+    const greet = h < 12 ? [t('morning'), 'בוקר טוב', 'boker tov'] : h >= 18 ? [t('evening'), 'ערב טוב', 'erev tov'] : [t('day'), 'שלום', 'shalom'];
+    const nx = nextNode();
+    let n = 0;
+    view(`
+      <section class="hello">
+        <div class="bubble"><b>${greet[0]}, ${esc(S.name)}!</b> <span class="hint" data-say="${greet[1]}"><span class="he" lang="he" dir="rtl">${greet[1]}</span> <i>${greet[2]}</i></span>
+          <p>${dl > 0 ? `<b>${dl}</b> ${t('daysTo')} · ` : ''}${pick(t('cheer')).replace('{n}', esc(S.name))}</p></div>
+        ${mascot('happy', 'big bounce')}
+      </section>
+      <a class="sim-cta tilt" href="#/sim">${img('sim', 'wiggle')}<div><b>${t('simTitle')}</b><span>${S.lang === 'es' ? `${Object.keys(S.sims).length} de ${NX.sims.length} casos hechos · practica para el 18/11` : `${Object.keys(S.sims).length} of ${NX.sims.length} cases done · practice for 18/11`}</span></div><span class="go">→</span></a>
+      ${NX.modules.map((m, u) => {
+        const col = UNIT_COLORS[u % UNIT_COLORS.length];
+        const nodes = m.lessons.map((l, i) => ({ k: i, title: L(l.t) })).concat([{ k: 'q', title: t('unitQuiz') }]);
+        return `<section class="unit" style="--u:${col}">
+          <header class="unit-head"><div><small>${t('unit')} ${u + 1}</small><h2>${L(m.title)}</h2><p>${L(m.blurb)}</p></div>${img(m.id, 'unit-img float')}</header>
+          <div class="path">${nodes.map((nd, j) => {
+            const key = nodeKey(m.id, nd.k), done = !!S.done[key], cur = nx && nx[0] === m.id && nx[1] === nd.k;
+            const off = Math.round(Math.sin((n++) * 0.95) * 72);
+            const icon = nd.k === 'q' ? 'trophy' : done ? 'check' : j === 0 ? 'star' : 'books';
+            return `<div class="node-wrap" style="--x:${off}px">
+              ${cur ? `<span class="start-bubble">${t('start')}</span>` : ''}
+              <a href="#/${nd.k === 'q' ? 'quiz/' + m.id : 'lesson/' + m.id + '/' + nd.k}" class="node ${done ? 'done' : ''} ${cur ? 'cur' : ''} ${!done && !cur ? 'todo' : ''} ${nd.k === 'q' ? 'quiz' : ''}" data-tip="${esc(nd.title)}" aria-label="${esc(nd.title)}">${img(icon)}</a>
+            </div>`;
+          }).join('')}</div>
+        </section>`;
+      }).join('')}`);
+  };
+
+  /* ---------- question builders ---------- */
+  function vocabMCQ(pool, v, mode) {
+    const alpha = v.alpha; mode = mode || (alpha ? 'he' : pick(['he', 'mean']));
+    const others = shuffle(pool.filter(x => x.he !== v.he && meaning(x) !== meaning(v) && x.alpha === alpha)).slice(0, 3);
+    if (others.length < 3) others.push(...shuffle(NX.vocab.filter(x => x.he !== v.he && x.alpha === alpha && !others.includes(x))).slice(0, 3 - others.length));
+    const opts = shuffle([v, ...others]);
+    const heChip = x => `<span class="he" lang="he" dir="rtl">${x.he}</span>`;
+    const base = { type: 'mcq', m: v.m, d: 1, a: opts.indexOf(v), say: v.he, w: `${heChip(v)} <i>${esc(v.tr)}</i> = <b>${esc(meaning(v))}</b>` };
+    if (mode === 'listen') return { ...base, q: `<div class="listen-q"><button class="speaker-big" data-say="${v.he}">${img('speaker')}</button></div>`, title: t('listenQ'), o: opts.map(x => esc(meaning(x))), autoSay: v.he };
+    if (mode === 'mean') return { ...base, title: `${t('meanHeb')} “${esc(meaning(v))}”?`, q: '', o: opts.map(x => heChip(x)), tiles: true };
+    return { ...base, title: alpha ? t('letterQ') : t('whatMeans'), q: `<button class="he-prompt" data-say="${v.he}"><span class="he" lang="he" dir="rtl">${v.he}</span>${S.hints && !alpha ? `<i>${esc(v.tr)}</i>` : ''}</button>`, o: opts.map(x => esc(meaning(x))) };
+  }
+  const staticMCQ = q => ({ type: 'mcq', id: q.id, m: q.m, d: q.d, a: q.a, title: '', q: `<p class="qtext">${esc(L(q.q))}</p>`, o: q.o.map(o => esc(L(o))), w: esc(L(q.w)) });
+
+  const r1 = x => Math.round(x * 10) / 10;
+  const DOSE = [
+    () => { const s = pick([5, 10, 25, 50, 100, 125, 250, 500]), n = pick([.5, 1, 1.5, 2, 3]), o = s * n;
+      return { q: [`Order: ${o} mg PO. Available: ${s} mg tablets. How many tablets?`, `Orden: ${o} mg VO. Disponible: comprimidos de ${s} mg. ¿Cuántos comprimidos?`], ans: n, unit: 'tab', tol: 0, steps: `${o} ÷ ${s} = ${n}` }; },
+    () => { const [c, v] = pick([[125, 5], [250, 5], [100, 5], [200, 5], [40, 1], [10, 1]]), ml = pick([2, 2.5, 4, 5, 7.5, 10, 12.5, 15]), o = r1(ml * c / v);
+      return { q: [`Order: ${o} mg. Syrup contains ${c} mg/${v} mL. How many mL?`, `Orden: ${o} mg. El jarabe contiene ${c} mg/${v} mL. ¿Cuántos mL?`], ans: ml, unit: 'mL', tol: .05, steps: `(${o} ÷ ${c}) × ${v} = ${ml} mL` }; },
+    () => { const d = pick([30, 40, 50, 60, 80, 100]), w = 6 + (Math.random() * 30 | 0), n = pick([2, 3, 4]), h = 24 / n, a = r1(d * w / n);
+      return { q: [`Child ${w} kg. Order: ${d} mg/kg/day divided every ${h} h. How many mg per dose?`, `Niño de ${w} kg. Orden: ${d} mg/kg/día cada ${h} h. ¿Cuántos mg por toma?`], ans: a, unit: 'mg', tol: .1, steps: `${d} × ${w} = ${d * w} mg ÷ ${n} = ${a} mg` }; },
+    () => { const v = pick([250, 500, 1000, 1500]), h = pick([2, 4, 5, 6, 8, 10, 12]), a = r1(v / h);
+      return { q: [`Infuse ${v} mL over ${h} h with a pump. Rate in mL/h?`, `Infundir ${v} mL en ${h} h con bomba. ¿Velocidad en mL/h?`], ans: a, unit: 'mL/h', tol: .5, steps: `${v} ÷ ${h} = ${a} mL/h` }; },
+    () => { const v = pick([100, 250, 500, 1000]), h = pick([1, 2, 4, 8]), df = pick([10, 15, 20, 60]), a = Math.round(v * df / (h * 60));
+      return { q: [`Infuse ${v} mL over ${h} h. Drop factor ${df} gtt/mL. Drops per minute?`, `Infundir ${v} mL en ${h} h. Factor de goteo ${df} gtt/mL. ¿Gotas por minuto?`], ans: a, unit: 'gtt/min', tol: 1, steps: `(${v} × ${df}) ÷ ${h * 60} min = ${r1(v * df / (h * 60))} ≈ ${a}` }; },
+    () => { const lb = 22 + (Math.random() * 200 | 0), a = r1(lb / 2.2);
+      return { q: [`A patient weighs ${lb} lb. Weight in kg?`, `Un paciente pesa ${lb} lb. ¿Peso en kg?`], ans: a, unit: 'kg', tol: .2, steps: `${lb} ÷ 2.2 = ${a} kg` }; },
+    () => { const d = pick([2, 3, 5, 10]), w = pick([50, 60, 70, 80, 90, 100]), c = pick([800, 1600]), a = r1(d * w * 60 / c);
+      return { q: [`Infusion ${d} mcg/kg/min, patient ${w} kg, concentration ${c} mcg/mL. Rate in mL/h?`, `Infusión ${d} mcg/kg/min, paciente de ${w} kg, concentración ${c} mcg/mL. ¿mL/h?`], ans: a, unit: 'mL/h', tol: .2, steps: `${d} × ${w} × 60 = ${d * w * 60} mcg/h ÷ ${c} = ${a} mL/h` }; },
+    () => { const mg = pick([0.125, 0.25, 0.5, 0.05, 1.5, 0.4]), a = r1(mg * 1000);
+      return { q: [`Convert ${mg} mg to micrograms (mcg).`, `Convierte ${mg} mg a microgramos (mcg).`], ans: a, unit: 'mcg', tol: 0, steps: `${mg} × 1000 = ${a} mcg` }; }
+  ];
+  const doseProblem = () => pick(DOSE)();
+  function doseMCQ() {
+    const p = doseProblem(), a = p.ans;
+    const cand = shuffle([...new Set([r1(a * 2), r1(a / 2), r1(a * 10), r1(a + (a >= 10 ? 5 : 1)), r1(a / 10), r1(a * 1.5)].filter(x => x > 0 && x !== a))]).slice(0, 3);
+    const opts = shuffle([a, ...cand]);
+    return { type: 'mcq', m: 'calc', d: 2, a: opts.indexOf(a), title: '', q: `<p class="qtext">${esc(L2(p.q))}</p>`, o: opts.map(x => `${x} ${p.unit}`), w: esc(p.steps) };
+  }
+
+  /* ---------- SESSION engine (Duolingo-style overlay) ---------- */
+  let X = null;
+  function session(cards, opts) {
+    X = Object.assign({ cards, i: 0, hearts: 5, ok: 0, n: 0, sel: null, checked: false, start: Date.now(), hasHearts: true, retry: true, silent: false, log: [], onEnd: null }, opts);
+    $('#overlay').hidden = false; document.body.classList.add('locked');
+    if (X.adaptive && !X.cards[0]) X.cards[0] = X.adaptive();
+    drawCard();
+    if (X.deadline) { stopTimer(); timer = setInterval(tickSession, 1000); }
+  }
+  function closeSession(goHash) {
+    stopTimer(); stopVoice(); $('#overlay').hidden = true; $('#overlay').innerHTML = ''; document.body.classList.remove('locked'); X = null;
+    if (goHash !== undefined) { if (location.hash === goHash) route(); else location.hash = goHash; }
+  }
+  function tickSession() {
+    if (!X || !X.deadline) return stopTimer();
+    const left = Math.max(0, X.deadline - Date.now()), el = $('#sclock');
+    if (el) el.textContent = `${Math.floor(left / 60000)}:${String(Math.floor(left / 1000) % 60).padStart(2, '0')}`;
+    if (!left) { X.timeUp = true; endSession(); }
+  }
+  function drawCard() {
+    const c = X.cards[X.i]; if (!c) return endSession();
+    X.sel = null; X.checked = false;
+    const pct = Math.round(100 * X.i / X.cards.length);
+    let body = '', foot = '';
+    if (c.type === 'teach') {
+      body = `<div class="teach">${mascot('happy', 'talk')}<div class="speech pop">${c.html}</div></div>`;
+      foot = `<button class="btn green wide" onclick="A.cont()">${t('continue')}</button>`;
+    } else if (c.type === 'word') {
+      body = `<h2 class="ctitle">${img('sparkles')} ${t('newWord')}</h2><button class="word-card pop" data-say="${c.v.he}">
+        <span class="he" lang="he" dir="rtl">${c.v.he}</span><i>${esc(c.v.tr)}</i><b>${esc(meaning(c.v))}</b>${img('speaker', 'spk')}</button>`;
+      foot = `<button class="btn green wide" onclick="A.cont()">${t('continue')}</button>`;
+    } else if (c.type === 'pairs') {
+      const L_ = shuffle(c.items), R_ = shuffle(c.items);
+      body = `<h2 class="ctitle">${t('tapPairs')}</h2><div class="pairs"><div>${L_.map(v => `<button class="ptile he" lang="he" dir="rtl" data-id="${v.id}" data-s="L" data-say="${v.he}">${v.he}</button>`).join('')}</div>
+        <div>${R_.map(v => `<button class="ptile" data-id="${v.id}" data-s="R">${esc(meaning(v))}</button>`).join('')}</div></div>`;
+      foot = `<button class="btn green wide" id="ctn" disabled onclick="A.cont()">${t('continue')}</button>`;
+      X.pair = { sel: null, done: 0, total: c.items.length };
+    } else {
+      body = `${c.title ? `<h2 class="ctitle">${c.title}</h2>` : ''}${c.q}
+        <div class="choices ${c.tiles ? 'tiles' : ''}">${c.o.map((o, k) => `<button class="choice" data-k="${k}" onclick="A.sel(${k})"><kbd>${k + 1}</kbd><span>${o}</span></button>`).join('')}</div>`;
+      foot = `${X.silent ? '' : `<button class="btn ghost" onclick="A.skip()">${t('skip')}</button>`}<button class="btn green" id="chk" disabled onclick="A.check()">${X.silent ? t('next') : t('check')}</button>`;
+    }
+    $('#overlay').innerHTML = `<div class="sess">
+      <header class="sess-top"><button class="x" onclick="A.quitAsk()" aria-label="${t('quit')}">✕</button>
+        <div class="pbar"><i style="width:${pct}%"></i></div>
+        <button class="readbtn" onclick="A.readCard()" aria-label="${t('readAloud')}" title="${t('readAloud')}">${img('speaker')}</button>
+        <button class="autochip ${S.autoRead ? 'on' : ''}" onclick="A.toggleAuto(this)" aria-pressed="${S.autoRead}" title="${t('autoRead')}">${t('auto')}</button>
+        ${X.deadline ? `<span class="clock">⏱ <b id="sclock"></b></span>` : X.hasHearts ? `<span class="hearts ${X.lostAnim ? 'lost' : ''}">${img('heart')}<b>${X.hearts}</b></span>` : ''}</header>
+      <div class="sess-body"><div class="card-in">${body}</div></div>
+      <footer class="sess-foot" id="foot"><div class="foot-in">${foot}</div></footer></div>`;
+    X.lostAnim = false;
+    if (X.deadline) tickSession();
+    if (S.autoRead) setTimeout(() => { if (X && X.cards[X.i] === c) readCard(); }, 380);
+    else if (c.type === 'word') setTimeout(() => play([{ he: c.v.he }]), 300);
+    else if (c.autoSay) setTimeout(() => play([{ he: c.autoSay }]), 350);
+  }
+  function readCard() {
+    const c = X && X.cards[X.i], ov = $('#overlay'); if (!c) return;
+    if (c.type === 'teach') return readEl(ov.querySelector('.speech'));
+    if (c.type === 'word') return play([{ he: c.v.he }, ...segments(meaning(c.v), S.lang)]);
+    if (c.type === 'pairs') return readParts([t('tapPairs')]);
+    if (c.autoSay) return play([...segments(t('listenQ'), S.lang), { he: c.autoSay }]);
+    readParts([textOf(ov.querySelector('.ctitle')), textOf(ov.querySelector('.qtext')), textOf(ov.querySelector('.he-prompt')), ...readChoices(ov)]);
+  }
+  function sel(k) {
+    if (X.checked) return; SFX.tap(); X.sel = k;
+    document.querySelectorAll('.choice').forEach((b, j) => b.classList.toggle('sel', j === k));
+    $('#chk').disabled = false;
+    if (S.autoRead) readParts([textOf(document.querySelectorAll('.choice')[k])]);
+  }
+  function check() {
+    if (X.checked || X.sel === null) return;
+    const c = X.cards[X.i], ok = X.sel === c.a; X.checked = true;
+    X.n++; if (ok) X.ok++; X.log.push({ m: c.m, ok, d: c.d });
+    stat(c.m, ok);
+    if (c.id) { const w = S.wrong.indexOf(c.id); if (ok && w > -1) S.wrong.splice(w, 1); if (!ok && w < 0) S.wrong.push(c.id); }
+    if (X.adaptive) X.level = Math.max(1, Math.min(3, X.level + (ok ? 1 : -1)));
+    if (X.silent) { save(); return setTimeout(advance, 120); }
+    document.querySelectorAll('.choice').forEach((b, j) => { b.disabled = true; if (j === c.a) b.classList.add('right'); else if (j === X.sel) b.classList.add('bad'); });
+    if (ok) { SFX.ok(); } else {
+      SFX.no(); if (X.hasHearts) { X.hearts--; const h = document.querySelector('.hearts'); if (h) { h.classList.add('lost'); h.querySelector('b').textContent = X.hearts; } }
+      if (X.retry && !c.retried) X.cards.push({ ...c, retried: true });
+    }
+    if (c.say) setTimeout(() => play([{ he: c.say }]), 350);
+    else if (S.autoRead && !ok) setTimeout(() => readParts([t('wrongT'), htmlText(c.o[c.a])]), 450);
+    $('#foot').className = `sess-foot ${ok ? 'good' : 'bad'}`;
+    $('#foot').innerHTML = `<div class="foot-in fb"><div class="fb-txt">${ok ? `<h3>${img('check')} ${pick(t('correct'))}</h3>` : `<h3>${t('wrongT')}</h3><p class="ans">${c.o[c.a]}</p>`}
+      ${c.w ? `<p class="why">${c.w}</p>` : ''}</div><button class="readbtn" onclick="A.readFb()" aria-label="${t('readAloud')}">${img('speaker')}</button><button class="btn ${ok ? 'green' : 'red'}" onclick="A.cont()">${t('continue')}</button></div>`;
+    touch(ok ? 2 : 0);
+  }
+  function advance() {
+    if (X.hasHearts && X.hearts <= 0) return outOfHearts();
+    X.i++;
+    if (X.adaptive && X.i < X.cards.length) X.cards[X.i] = X.adaptive();
+    drawCard();
+  }
+  function outOfHearts() {
+    SFX.no();
+    $('#overlay').innerHTML = `<div class="sess center"><div class="end pop">${mascot('sad', 'big')}<h1>${t('outHearts')}</h1><p>${t('outHeartsD')}</p>
+      <div class="row"><button class="btn green" onclick="A.retrySession()">${t('retry')}</button><button class="btn ghost" onclick="A.closeTo('#/')">${t('quit')}</button></div></div></div>`;
+  }
+  function endSession() {
+    stopTimer();
+    const secs = Math.round((Date.now() - X.start) / 1000), acc = X.n ? Math.round(100 * X.ok / X.n) : 100;
+    const xp = (X.xpBase || 10) + X.ok * 2 + (X.n && X.ok === X.n ? 5 : 0);
+    if (X.onEnd) X.onEnd(acc);
+    touch(xp); SFX.win(); confetti();
+    let extra = '';
+    if (X.byTopic) {
+      const by = {}; X.log.forEach(r => { const b = by[r.m] || (by[r.m] = { ok: 0, n: 0 }); b.n++; if (r.ok) b.ok++; });
+      extra = `<div class="topics">${Object.entries(by).map(([m, b]) => `<div>${img(m)}<span>${L(modById(m).title)}</span><div class="mbar-mini"><i style="width:${100 * b.ok / b.n}%"></i></div><small>${b.ok}/${b.n}</small></div>`).join('')}</div>`;
+    }
+    $('#overlay').innerHTML = `<div class="sess center"><div class="end">
+      ${mascot('happy', 'big jump')}<h1 class="pop">${X.timeUp ? t('timeUp') : X.doneTitle || t('lessonDone')}</h1>
+      <div class="end-stats">
+        <div class="es gold"><small>${t('totalXp')}</small><b data-c="${xp}">0</b></div>
+        <div class="es green"><small>${t('accuracy')}</small><b data-c="${acc}" data-suffix="%">0</b></div>
+        <div class="es blue"><small>${t('time')}</small><b>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</b></div>
+      </div>${extra}
+      <button class="btn green wide" onclick="A.closeTo('${X.back || '#/'}')">${t('continue')}</button></div></div>`;
+    document.querySelectorAll('[data-c]').forEach(el => countUp(el, +el.dataset.c));
+  }
+
+  /* lesson & quiz sessions */
+  R.lesson = (id, i) => {
+    const m = modById(id); i = +i; const l = m && m.lessons[i]; if (!l) return R.learn();
+    const cards = l.p.map(p => ({ type: 'teach', html: hint(esc(L(p))) }));
+    const words = l.alpha ? shuffle(l.v).slice(0, 6) : l.v.slice(0, 5);
+    words.forEach(v => cards.push({ type: 'word', v }));
+    if (l.v.length >= 4) cards.push({ type: 'pairs', items: shuffle(words.length >= 4 ? words : l.v).slice(0, 4) });
+    if (words.length) { cards.push(vocabMCQ(l.v, pick(words))); cards.push(vocabMCQ(l.v, pick(words), l.alpha ? 'he' : hasHebrewVoice() ? 'listen' : 'mean')); }
+    const mq = NX.qs.filter(q => q.m === id);
+    if (mq.length) [0, 1].forEach(k => cards.push(staticMCQ(mq[(i * 2 + k) % mq.length])));
+    R.learn();
+    session(cards, { back: '#/', xpBase: 15, onEnd: () => { S.done[nodeKey(id, i)] = 1; } });
+  };
+  const hasHebrewVoice = () => { try { return speechSynthesis.getVoices().some(v => /^he/i.test(v.lang)); } catch (e) { return false; } };
+  R.quiz = id => {
+    const m = modById(id); if (!m) return R.learn();
+    const pool = NX.vocab.filter(v => v.m === id);
+    let cards = NX.qs.filter(q => q.m === id).map(staticMCQ).concat(shuffle(pool).slice(0, id === 'heb' ? 8 : 3).map(v => vocabMCQ(pool, v)));
+    if (id === 'calc') cards = cards.concat(Array.from({ length: 4 }, doseMCQ));
+    R.learn();
+    session(shuffle(cards), { back: '#/', xpBase: 25, doneTitle: t('quizDone'), onEnd: acc => { if (acc >= 60) S.done[nodeKey(id, 'q')] = 1; } });
+  };
+  R.review = () => {
+    const cards = S.wrong.map(id => NX.qs.find(q => q.id === id)).filter(Boolean).map(staticMCQ);
+    R.practice();
+    if (!cards.length) return toast(t('noWrong'), 'party');
+    session(shuffle(cards), { back: '#/practice', hasHearts: false, retry: false });
+  };
+
+  /* mock exam (adaptive, silent, timed) */
+  let mockPool = [];
+  function pickAdaptive() {
+    for (let gap = 0; gap < 3; gap++) {
+      const c = mockPool.filter(q => Math.abs(q.d - X.level) === gap);
+      if (c.length) { const q = pick(c); mockPool.splice(mockPool.indexOf(q), 1); return q; }
+    }
+    return doseMCQ();
+  }
+  function startMock(n) {
+    mockPool = NX.qs.filter(q => q.m !== 'heb').map(staticMCQ).concat(Array.from({ length: 8 }, doseMCQ));
+    session(new Array(n).fill(null), { back: '#/practice', hasHearts: false, retry: false, silent: true, adaptive: pickAdaptive, level: 2, deadline: Date.now() + n * 1.65 * 60000, byTopic: true, xpBase: 30, doneTitle: t('mock'),
+      onEnd: acc => { S.best.mock = Math.max(S.best.mock || 0, acc); } });
+  }
+
+  /* ---------- SIM WARD ---------- */
+  R.sim = id => {
+    if (id) return runSim(id);
+    view(`<section class="page-head">${img('sim', 'head-img float')}<div><h1>${t('simTitle')}</h1><p>${t('simIntro')}</p></div></section>
+      <div class="sim-grid">${NX.sims.map((s, i) => {
+        const r = S.sims[s.id];
+        return `<a class="card sim-card tilt" href="#/sim/${s.id}" style="--d:${i * 60}ms">
+          <div class="sim-pic">${img(s.img)}<span class="area">${img(s.area)}</span></div>
+          <div><h3>${L2(s.t)}</h3><p>${esc(s.name)}${s.age > 1 ? `, ${s.age} ${t('yrs')}` : ''}</p>
+          <div class="stars">${[1, 2, 3].map(k => `<span class="${r && r.stars >= k ? 'on' : ''}">★</span>`).join('')}${r ? `<small>${r.best}%</small>` : ''}</div></div></a>`;
+      }).join('')}</div>`);
+  };
+  let SIM = null, ecgRAF = 0;
+  function runSim(id) {
+    const s = NX.sims.find(x => x.id === id); if (!s) return R.sim();
+    SIM = { s, i: 0, pts: 0, max: s.steps.length * 2, log: [], skills: {} };
+    view(`<a class="crumb" href="#/sim">← ${t('simTitle')}</a>
+      <div class="ward">
+        <aside class="bed card">
+          <div class="pt">${img(s.img, 'pt-img')}<div><small>${t('patient')}</small><h2>${esc(s.name)}</h2><p>${s.age > 1 ? s.age + ' ' + t('yrs') : ''}</p></div></div>
+          <p class="ctx">${L2(s.ctx)}</p>
+          <div class="monitor" id="mon"><canvas id="ecg" width="600" height="120"></canvas><div class="vitals" id="vit"></div></div>
+          <div class="simprog" id="simprog"></div>
+        </aside>
+        <section class="step card" id="step"></section>
+      </div>`);
+    drawStep();
+    startECG();
+  }
+  const isBad = (k, v) => ({ hr: v < 50 || v > 120, spo2: v < 90, rr: v < 10 || v > 28, t: v >= 38.5 || v < 35.5, gl: v !== '?' && (v < 70 || v > 250), bp: parseInt(v) < 90 || parseInt(v) >= 180 }[k]);
+  function drawVitals(v, crit) {
+    SIM.v = v;
+    const cell = (k, label, val, unit) => val === undefined ? '' : `<div class="vt ${k} ${isBad(k, val) ? 'alarm' : ''}"><small>${label}</small><b>${val}</b><i>${unit}</i></div>`;
+    $('#vit').innerHTML = cell('hr', 'HR', v.hr, 'bpm') + cell('bp', 'BP', v.bp, 'mmHg') + cell('spo2', 'SpO₂', v.spo2, '%') + cell('rr', 'RR', v.rr, '/min') + cell('t', 'T', v.t, '°C') + (v.gl !== undefined ? cell('gl', 'Glu', v.gl, 'mg/dL') : '');
+    $('#mon').classList.toggle('crit', !!crit);
+  }
+  function startECG() {
+    cancelAnimationFrame(ecgRAF);
+    const c = $('#ecg'); if (!c) return; const x = c.getContext('2d'); let pos = 0, last = performance.now(), y0 = 70, prevY = y0;
+    const beat = ph => ph < .08 ? -Math.sin(ph / .08 * Math.PI) * 6 : ph < .14 ? 0 : ph < .16 ? 8 : ph < .19 ? -48 : ph < .22 ? 18 : ph < .3 ? 0 : ph < .42 ? -Math.sin((ph - .3) / .12 * Math.PI) * 10 : 0;
+    let ph = 0;
+    (function loop(n) {
+      if (!document.body.contains(c)) return;
+      const dt = (n - last) / 1000; last = n; const hr = (SIM && SIM.v && SIM.v.hr) || 80;
+      const crit = $('#mon') && $('#mon').classList.contains('crit');
+      const speed = 140; const steps = Math.max(1, Math.round(speed * dt));
+      for (let k = 0; k < steps; k++) {
+        ph += (hr / 60) / speed; if (ph > 1) ph -= 1;
+        const y = y0 + beat(ph) + (crit ? (Math.random() - .5) * 6 : 0);
+        x.clearRect(pos, 0, 14, c.height);
+        x.strokeStyle = crit ? '#ff4b4b' : '#4cff7a'; x.lineWidth = 2.4; x.beginPath(); x.moveTo(pos - 1, prevY); x.lineTo(pos, y); x.stroke();
+        prevY = y; pos = (pos + 1) % c.width; if (pos === 0) prevY = y0;
+      }
+      ecgRAF = requestAnimationFrame(loop);
+    })(last);
+  }
+  function drawStep() {
+    const st = SIM.s.steps[SIM.i];
+    $('#simprog').innerHTML = SIM.s.steps.map((_, k) => `<i class="${k < SIM.i ? 'done' : k === SIM.i ? 'cur' : ''}"></i>`).join('');
+    drawVitals(st.v);
+    const order = shuffle(st.c.map((c, k) => k));
+    $('#step').innerHTML = `<div class="step-in pop"><div class="step-top"><span class="skill ${st.k}">${t('skills')[st.k]}</span>
+      <button class="readbtn" onclick="A.readStep()" aria-label="${t('readAloud')}" title="${t('readAloud')}">${img('speaker')}</button>
+      <button class="autochip ${S.autoRead ? 'on' : ''}" onclick="A.toggleAuto(this)" aria-pressed="${S.autoRead}" title="${t('autoRead')}">${t('auto')}</button></div>
+      <p class="situation">${L2(st.s)}</p>
+      <div class="choices">${order.map((k, n) => `<button class="choice" data-k="${k}" onclick="A.simPick(${k})"><kbd>${n + 1}</kbd><span>${esc(L2([st.c[k][1], st.c[k][2]]))}</span></button>`).join('')}</div>
+      <div id="simfb"></div></div>`;
+    if (S.autoRead) setTimeout(() => { if (SIM && SIM.s.steps[SIM.i] === st) readStep(); }, SIM.i === 0 ? 600 : 300);
+  }
+  const readStep = () => { const s = $('#step'); if (s) readParts([textOf(s.querySelector('.situation')), ...readChoices(s)]); };
+  function simPick(k) {
+    const st = SIM.s.steps[SIM.i], c = st.c[k], sc = c[0], best = st.c.findIndex(x => x[0] === 2);
+    SIM.pts += Math.max(0, sc); SIM.log.push({ i: SIM.i, k, sc });
+    const sk = SIM.skills[st.k] || (SIM.skills[st.k] = { p: 0, m: 0 }); sk.p += Math.max(0, sc); sk.m += 2;
+    document.querySelectorAll('#step .choice').forEach(b => { b.disabled = true; const j = +b.dataset.k; if (j === best) b.classList.add('right'); else if (j === k) b.classList.add(sc === 1 ? 'meh' : 'bad'); });
+    if (sc === 2) SFX.ok(); else if (sc === -1) {
+      SFX.alarm(); const v = st.v, worse = { ...v, hr: Math.min(170, v.hr + 22), spo2: Math.max(78, v.spo2 - 6), rr: Math.min(36, v.rr + 6) };
+      drawVitals(worse, true); setTimeout(() => { if (SIM && SIM.s.steps[SIM.i] === st) drawVitals(st.v); }, 2600);
+    } else SFX.no();
+    const cls = sc === 2 ? 'good' : sc === 1 ? 'meh' : 'bad', label = sc === 2 ? `+2 ${t('pts')}` : sc === 1 ? `+1 ${t('pts')}` : sc === 0 ? `0 ${t('pts')}` : (S.lang === 'es' ? '⚠ Inseguro' : '⚠ Unsafe');
+    const last = SIM.i === SIM.s.steps.length - 1;
+    $('#simfb').innerHTML = `<div class="simfb ${cls} pop"><b>${label}</b><p>${esc(L2([c[3], c[4]]))}</p>
+      <button class="btn ${sc === 2 ? 'green' : sc === 1 ? 'orange' : 'red'}" onclick="A.simNext()">${last ? t('debrief') : t('next')} →</button></div>`;
+    if (S.autoRead) setTimeout(() => readParts([L2([c[3], c[4]])]), sc === -1 ? 1000 : 400);
+    touch(sc === 2 ? 4 : 1);
+  }
+  function simNext() {
+    SIM.i++;
+    if (SIM.i < SIM.s.steps.length) return drawStep();
+    cancelAnimationFrame(ecgRAF);
+    const pct = Math.round(100 * SIM.pts / SIM.max), stars = pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 50 ? 1 : 0;
+    const prev = S.sims[SIM.s.id]; S.sims[SIM.s.id] = { best: Math.max(pct, prev ? prev.best : 0), stars: Math.max(stars, prev ? prev.stars : 0) };
+    touch(20 + stars * 10); SFX.win(); if (stars >= 2) confetti();
+    view(`<a class="crumb" href="#/sim">← ${t('simTitle')}</a>
+      <section class="card debrief"><div class="db-head">${mascot(stars ? 'happy' : 'sad', 'big jump')}<div><h1>${t('debrief')}: ${L2(SIM.s.t)}</h1>
+        <div class="stars big">${[1, 2, 3].map(k => `<span class="${stars >= k ? 'on pop' : ''}" style="animation-delay:${k * 180}ms">★</span>`).join('')}</div><p class="pct"><b data-c="${pct}" data-suffix="%">0</b></p></div></div>
+        <div class="skillbars">${Object.entries(SIM.skills).map(([k, v]) => `<div><span class="skill ${k}">${t('skills')[k]}</span><div class="mbar-mini"><i style="width:${100 * v.p / v.m}%"></i></div><small>${v.p}/${v.m}</small></div>`).join('')}</div>
+        <ol class="db-steps">${SIM.log.map(r => { const st = SIM.s.steps[r.i], b = st.c.find(x => x[0] === 2), mine = st.c[r.k];
+          return `<li class="${r.sc === 2 ? 'good' : r.sc === -1 ? 'bad' : 'meh'}"><p>${L2(st.s)}</p>${r.sc !== 2 ? `<p><small>${t('yourPick')}:</small> ${esc(L2([mine[1], mine[2]]))}</p>` : ''}<p><small>${t('best')}:</small> <b>${esc(L2([b[1], b[2]]))}</b></p></li>`; }).join('')}</ol>
+        <div class="row"><a class="btn green" href="#/sim/${SIM.s.id}" onclick="setTimeout(A.route)">${t('again')}</a><a class="btn ghost" href="#/sim">${t('backWard')}</a></div></section>`);
+    document.querySelectorAll('[data-c]').forEach(el => countUp(el, +el.dataset.c));
+  }
+
+  /* ---------- PRACTICE hub & games ---------- */
+  R.practice = () => {
+    const games = [['flash', 'flash', '#/flash/all', ''], ['match', 'match', '#/match/all', ''], ['speed', 'speed', '#/speed/all', S.best.speed ? `${t('record')}: ${S.best.speed}` : ''],
+      ['dose', 'dose', '#/dose', `✓ ${S.doseOk}`], ['mock', 'mock', '#/mock', S.best.mock ? `${t('record')}: ${S.best.mock}%` : ''], ['review', 'review', '#/review', `${S.wrong.length}`]];
+    view(`<section class="page-head">${img('target', 'head-img float')}<div><h1>${t('practice')}</h1></div></section>
+      <div class="game-grid">${games.map(([k, im, h, sub], i) => `<a class="card game tilt" href="${h}" style="--d:${i * 60}ms;--g:${UNIT_COLORS[i]}">
+        ${img(im, 'wiggle')}<h3>${t(k)}</h3><p>${t(k + 'D')}</p>${sub ? `<span class="chip">${sub}</span>` : ''}</a>`).join('')}</div>`);
+  };
+  R.mock = () => {
+    const total = NX.qs.filter(q => q.m !== 'heb').length + 8;
+    view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><section class="card center-card">${img('mock', 'head-img float')}<h1>${t('mock')}</h1><p>${t('mockD')}</p>
+      <h3>${t('length')}</h3><div class="row">${[15, 30, total].map((n, i) => `<button class="btn ${i === 1 ? 'green' : 'blue'}" onclick="A.startMock(${n})">${n} ${t('questions')} · ${Math.round(n * 1.65)}′</button>`).join('')}</div></section>`);
+  };
+
+  let F = null;
+  const deckPool = id => id === 'all' ? NX.vocab : NX.vocab.filter(v => v.m === id);
+  const deckPicker = (route, id) => `<label class="deck">${t('deck')} <select onchange="location.hash='#/${route}/'+this.value">
+      <option value="all">${t('all')}</option>${NX.modules.map(m => `<option value="${m.id}" ${m.id === id ? 'selected' : ''}>${L(m.title)}</option>`).join('')}</select></label>`;
+  R.flash = id => {
+    id = id || 'all'; const pool = deckPool(id); if (!pool.length) return R.practice();
+    const minBox = Math.min(...pool.map(v => S.box[v.id] || 0)), v = pick(pool.filter(x => (S.box[x.id] || 0) === minBox));
+    const mastered = pool.filter(x => (S.box[x.id] || 0) >= 4).length; F = { id, v };
+    view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><div class="game-top"><h1>${img('flash')} ${t('flash')}</h1>${deckPicker('flash', id)}</div>
+      <div class="mbar-mini wide"><i style="width:${100 * mastered / pool.length}%"></i></div><p class="muted">${mastered}/${pool.length} ${t('mastered')}</p>
+      <div class="flip" id="flip" onclick="A.flip()"><div class="face front">${img(v.m, 'face-img')}<b>${esc(meaning(v))}</b><span class="muted">${t('reveal')} 👆</span></div>
+      <div class="face back"><span class="he huge" lang="he" dir="rtl">${v.he}</span><i>${esc(v.tr)}</i><b>${esc(meaning(v))}</b></div></div>
+      <div class="row center"><button class="btn red" onclick="A.grade(0)">${t('notyet')}</button><button class="btn blue round" data-say="${v.he}">${img('speaker')}</button><button class="btn green" onclick="A.grade(1)">${t('know')}</button></div>`);
+  };
+  function flip() { const f = $('#flip'); f.classList.toggle('on'); SFX.tap(); if (f.classList.contains('on')) speak(F.v.he); }
+  function grade(ok) { S.box[F.v.id] = ok ? Math.min(5, (S.box[F.v.id] || 0) + 1) : 1; ok ? SFX.ok() : SFX.tap(); touch(ok ? 3 : 1); R.flash(F.id); }
+
+  let M = null;
+  R.match = id => {
+    id = id || 'all'; const pool = deckPool(id).filter(v => !v.alpha || id === 'heb');
+    const set = []; for (const v of shuffle(pool)) { if (!set.some(x => x.he === v.he || meaning(x) === meaning(v))) set.push(v); if (set.length === 6) break; }
+    M = { id, set, sel: null, done: 0, start: Date.now(), miss: 0 };
+    view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><div class="game-top"><h1>${img('match')} ${t('match')}</h1>${deckPicker('match', id)}<span class="clock big" id="mt">0s</span></div>
+      <div class="pairs big"><div>${shuffle(set).map(v => `<button class="ptile he" lang="he" dir="rtl" data-id="${v.id}" data-s="L" data-say="${v.he}">${v.he}${S.hints ? `<small>${esc(v.tr)}</small>` : ''}</button>`).join('')}</div>
+      <div>${shuffle(set).map(v => `<button class="ptile" data-id="${v.id}" data-s="R">${esc(meaning(v))}</button>`).join('')}</div></div>`);
+    X = null; stopTimer(); timer = setInterval(() => { const el = $('#mt'); if (!el) return stopTimer(); el.textContent = `${Math.round((Date.now() - M.start) / 1000)}s`; }, 500);
+  };
+  /* shared pair-tile logic for the Match game and in-lesson pairs */
+  function tile(b) {
+    const P = X && X.pair ? X.pair : M; if (!P || b.classList.contains('ok')) return;
+    SFX.tap();
+    if (!P.sel || P.sel.dataset.s === b.dataset.s) { if (P.sel) P.sel.classList.remove('sel'); P.sel = b; b.classList.add('sel'); return; }
+    const a = P.sel; P.sel = null; a.classList.remove('sel');
+    if (a.dataset.id === b.dataset.id) {
+      [a, b].forEach(x => x.classList.add('ok')); P.done++; SFX.ok();
+      const total = P.total || P.set.length;
+      if (P.done === total) {
+        if (X && X.pair) { $('#ctn').disabled = false; X.pair = null; X.ok++; X.n++; }
+        else { stopTimer(); const s = Math.round((Date.now() - M.start) / 1000); touch(20); confetti(); SFX.win(); toast(`${s}s · ${M.miss} ✗ · +20 XP`, 'match'); setTimeout(() => R.match(M.id), 1600); }
+      }
+    } else { if (M && !X) M.miss++; SFX.no(); [a, b].forEach(x => { x.classList.add('shake'); setTimeout(() => x.classList.remove('shake'), 450); }); }
+  }
+
+  let SP = null;
+  R.speed = id => {
+    id = id || 'all'; SP = { id, pool: deckPool(id), score: 0, combo: 0, end: 0 };
+    view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><section class="card center-card">${img('speed', 'head-img float')}<h1>${t('speed')}</h1>${deckPicker('speed', id)}<p>${t('speedD')}</p>
+      ${S.best.speed ? `<p class="chip">${t('record')}: ${S.best.speed}</p>` : ''}<button class="btn green big" onclick="A.speedGo()">${t('play')} ▶</button></section>`);
+  };
+  function speedGo() { SP.end = Date.now() + 60000; SP.score = 0; SP.combo = 0; stopTimer(); timer = setInterval(speedTick, 200); speedQ(); }
+  function speedTick() {
+    const left = Math.max(0, SP.end - Date.now()), el = $('#sclk'), bar = $('#sbar');
+    if (el) el.textContent = Math.ceil(left / 1000); if (bar) bar.style.width = `${left / 600}%`;
+    if (!left) {
+      stopTimer(); const best = S.best.speed || 0, rec = SP.score > best; if (rec) S.best.speed = SP.score; touch(SP.score * 2); SFX.win(); if (rec) confetti();
+      view(`<section class="card center-card">${mascot('happy', 'big jump')}<h1 class="pop">${SP.score}</h1><p>${rec ? '🏆 ' + t('record') + '!' : t('record') + ': ' + best}</p>
+        <div class="row"><button class="btn green" onclick="A.speedRestart()">${t('again')}</button><a class="btn ghost" href="#/practice">${t('practice')}</a></div></section>`);
+    }
+  }
+  function speedQ() {
+    SP.q = vocabMCQ(SP.pool, pick(SP.pool), pick(['he', 'mean']));
+    view(`<div class="speed-top"><b class="clock big" id="sclk">60</b><div class="pbar"><i id="sbar"></i></div><span class="score">⭐ ${SP.score}</span>${SP.combo > 2 ? `<span class="combo pop">🔥×${SP.combo}</span>` : ''}</div>
+      <section class="card speed-card pop"><h2 class="ctitle">${SP.q.title}</h2>${SP.q.q}<div class="choices ${SP.q.tiles ? 'tiles' : ''}">${SP.q.o.map((o, k) => `<button class="choice" onclick="A.speedAns(${k},this)"><span>${o}</span></button>`).join('')}</div></section>`);
+    speedTick();
+  }
+  function speedAns(k, b) {
+    const ok = k === SP.q.a; b.classList.add(ok ? 'right' : 'bad');
+    if (ok) { SP.combo++; SP.score += SP.combo > 4 ? 2 : 1; SFX.ok(); } else { SP.combo = 0; SFX.no(); }
+    setTimeout(() => { if (SP.end > Date.now()) speedQ(); }, ok ? 220 : 650);
+  }
+
+  let D = null;
+  R.dose = () => {
+    D = doseProblem();
+    view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><div class="game-top"><h1>${img('dose')} ${t('dose')}</h1><span class="chip">✓ ${S.doseOk}</span></div>
+      <section class="card dose-card pop"><p class="qtext">${esc(L2(D.q))}</p>
+      <form onsubmit="A.doseCheck();return false" class="doseform"><input id="dv" inputmode="decimal" autocomplete="off" required placeholder="?"><span class="unit">${D.unit}</span>
+      <button class="btn green">${t('check')}</button></form><div id="dfb"></div></section>`);
+    $('#dv').focus();
+  };
+  function doseCheck() {
+    const v = parseFloat($('#dv').value.replace(',', '.')), ok = Math.abs(v - D.ans) <= D.tol + 1e-9;
+    if (ok) { S.doseOk++; SFX.ok(); } else SFX.no(); stat('calc', ok); touch(ok ? 12 : 2);
+    $('#dfb').innerHTML = `<div class="simfb ${ok ? 'good' : 'bad'} pop"><b>${ok ? pick(t('correct')) : `${t('wrongT')} ${D.ans} ${D.unit}`}</b><p><small>${t('steps')}:</small> ${esc(D.steps)}</p>
+      <button class="btn ${ok ? 'green' : 'red'}" onclick="A.route()">${t('next')} →</button></div>`;
+  }
+
+  /* ---------- PLAN: day-by-day sprint to 18.11 ---------- */
+  /* aligned to the END: the last entry is always the day before the exam */
+  const SPRINT = [
+    ['sim', 'mi', 'fund'], ['sim', 'hypo', 'medsurg'], ['sim', 'ana', 'pharm'], ['sim', 'bleed', 'medsurg'], ['sim', 'copd', 'calc'], ['sim', 'stroke', 'emerg'],
+    ['sim', 'pph', 'mat'], ['sim', 'child', 'peds'], ['sim', 'psy', 'psych'], ['law'], ['heb', 'review'], ['mock'], ['simall', 'calc'], ['law', 'review'],
+    ['simall', 'fund'], ['mock', 'review'], ['simall', 'emerg'], ['simall'], ['rest']
+  ];
+  R.plan = () => {
+    const start = new Date(S.planStart + 'T12:00:00'), end = new Date('2026-11-17T12:00:00');
+    const days = []; for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+    const tdy = today();
+    const taskHtml = task => {
+      const [kind, a] = task;
+      if (kind === 'sim') { const s = NX.sims.find(x => x.id === a); return `<a href="#/sim/${a}">${img('sim')} ${L2(s.t)}</a>`; }
+      if (kind === 'simall') return `<a href="#/sim">${img('sim')} ${t('simTitle')} ×3</a>`;
+      if (kind === 'mock') return `<a href="#/mock">${img('mock')} ${t('mock')}</a>`;
+      if (kind === 'review') return `<a href="#/review">${img('review')} ${t('review')}</a>`;
+      if (kind === 'rest') return `<span>${img('heart')} ${S.lang === 'es' ? 'Repaso suave, revisa la invitación, descansa' : 'Light review, check your invitation, rest'}</span>`;
+      const m = modById(kind); return `<a href="#/">${img(m.id)} ${L(m.title)}</a>`;
+    };
+    view(`<section class="page-head">${img('calendar', 'head-img float')}<div><h1>${t('planTitle')}</h1><p>${t('planD')}</p></div></section>
+      <ol class="sprint">${days.map((d, i) => {
+        const key = d.toISOString().slice(0, 10), item = SPRINT[Math.max(0, SPRINT.length - (days.length - i))];
+        const tasks = item[0] === 'sim' ? [['sim', item[1]], [item[2]]] : item.map(k => [k]);
+        const isToday = key === tdy, done = S.plan[key];
+        return `<li class="${isToday ? 'today' : ''} ${done ? 'done' : ''} ${key < tdy && !done ? 'missed' : ''}" style="--d:${i * 40}ms">
+          <label class="tick"><input type="checkbox" ${done ? 'checked' : ''} onchange="A.planTick('${key}',this.checked)"><span></span></label>
+          <div class="day"><b>${d.toLocaleDateString(S.lang === 'es' ? 'es' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</b>${isToday ? `<em>${t('today')}</em>` : ''}</div>
+          <div class="tasks">${tasks.map(taskHtml).join('')}<span class="muted">${img('heb')} ${t('hebDaily')}</span></div></li>`;
+      }).join('')}
+      <li class="exam-day"><div class="day"><b>18.11</b></div><div class="tasks">${img('mary')} <b>${esc(S.name)} · ${S.lang === 'es' ? '¡Día del examen! Mucha suerte' : 'Exam day! בהצלחה (behatzlacha), good luck!'}</b></div></li></ol>`);
+  };
+
+  /* ---------- EXAM info & PROFILE ---------- */
+  R.exam = () => view(document.getElementById(`exam-${S.lang}`).innerHTML);
+  R.me = () => {
+    const tot = NX.modules.reduce((n, m) => n + m.lessons.length, 0), done = Object.keys(S.done).filter(k => !k.endsWith('-q')).length;
+    view(`<section class="profile card">${img('mary', 'avatar-big float')}<div><h1>${esc(S.name)}</h1><p>${t('level')} ${level()} · ${S.xp} XP</p></div></section>
+      <div class="pstats">
+        <div class="card">${img('fire')}<b>${S.streak}</b><small>${t('streak')}</small></div>
+        <div class="card">${img('books')}<b>${done}/${tot}</b><small>${t('lessons')}</small></div>
+        <div class="card">${img('sim')}<b>${Object.keys(S.sims).length}/${NX.sims.length}</b><small>${t('simTitle')}</small></div>
+        <div class="card">${img('heb')}<b>${Object.values(S.box).filter(b => b >= 4).length}</b><small>עברית</small></div>
+      </div>
+      <h2>${t('badges')}</h2><div class="badge-grid">${BADGES.map(b => `<div class="badge ${S.badges.includes(b[0]) ? 'on' : ''}">${img(b[1])}<small>${esc(L2([b[2], b[3]]))}</small></div>`).join('')}</div>
+      <h2>${t('settings')}</h2><section class="card settings">
+        <label>${t('name')} <input value="${esc(S.name)}" maxlength="24" onchange="A.setName(this.value)"></label>
+        <label>${t('language')} <span class="seg"><button class="${S.lang === 'en' ? 'on' : ''}" onclick="A.setLang('en')">English</button><button class="${S.lang === 'es' ? 'on' : ''}" onclick="A.setLang('es')">Español</button></span></label>
+        <label>${t('hints')} <span class="seg"><button class="${S.hints ? 'on' : ''}" onclick="A.setOpt('hints',true)">${t('on')}</button><button class="${!S.hints ? 'on' : ''}" onclick="A.setOpt('hints',false)">${t('off')}</button></span></label>
+        <label>${t('sound')} <span class="seg"><button class="${S.sound ? 'on' : ''}" onclick="A.setOpt('sound',true)">${t('on')}</button><button class="${!S.sound ? 'on' : ''}" onclick="A.setOpt('sound',false)">${t('off')}</button></span></label>
+        <label>${t('autoRead')} <span class="seg"><button class="${S.autoRead ? 'on' : ''}" onclick="A.setOpt('autoRead',true)">${t('on')}</button><button class="${!S.autoRead ? 'on' : ''}" onclick="A.setOpt('autoRead',false)">${t('off')}</button></span></label>
+        <label>${t('speed2')} <span class="seg"><button class="${S.rate < 1 ? 'on' : ''}" onclick="A.setOpt('rate',.8)">${t('slow')}</button><button class="${S.rate >= 1 ? 'on' : ''}" onclick="A.setOpt('rate',1)">${t('normal')}</button></span></label>
+        <div class="audiotest"><button class="btn blue" onclick="A.testAudio()">${img('speaker')} ${t('testAudio')}</button><ul id="audiorep"></ul></div>
+        <button class="btn red small" onclick="A.reset()">${t('reset')}</button></section>
+      <p class="fine">${t('disclaimer')} · 3D images: Microsoft Fluent Emoji (MIT).</p>`);
+  };
+
+  /* ---------- router & events ---------- */
+  function route() {
+    stopTimer(); stopVoice(); cancelAnimationFrame(ecgRAF);
+    const [, page, a, b] = (location.hash || '#/').split('/');
+    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', dose: 'practice', mock: 'practice', review: 'practice', plan: 'plan', exam: 'exam', me: 'me' }[page || ''] || 'learn';
+    document.querySelectorAll('[data-nav]').forEach(x => x.classList.toggle('active', x.dataset.nav === tab));
+    $('#app').classList.toggle('wide', tab !== 'learn' && tab !== 'me');
+    (R[page] || R.learn)(a, b);
+    chrome();
+  }
+  window.addEventListener('hashchange', () => { if (X && !$('#overlay').hidden) closeSession(); route(); });
+  document.addEventListener('click', e => {
+    const s = e.target.closest('[data-say]'); if (s && !s.classList.contains('ptile')) speak(s.dataset.say);
+    const p = e.target.closest('.ptile'); if (p) { if (p.dataset.say) speak(p.dataset.say); tile(p); }
+  });
+  document.addEventListener('keydown', e => {
+    if (!X || $('#overlay').hidden) return;
+    if (/^[1-4]$/.test(e.key) && document.querySelector('.choice')) sel(+e.key - 1);
+    if (e.key === 'Enter') { const b = $('#foot .btn.green:not([disabled]), #foot .btn.red'); if (b) b.click(); }
+  });
+
+  window.A = {
+    route, sel, check, flip, grade, startMock, simPick, simNext, speedGo, speedAns, doseCheck,
+    card: () => X && X.cards[X.i], /* read-only hook for automated tests */
+    readCard, readStep, readFb: () => readEl($('.fb-txt')),
+    toggleAuto: b => { S.autoRead = !S.autoRead; save(); document.querySelectorAll('.autochip').forEach(x => { x.classList.toggle('on', S.autoRead); x.setAttribute('aria-pressed', S.autoRead); }); if (!S.autoRead) stopVoice(); else (X ? readCard : readStep)(); },
+    testAudio: () => {
+      loadVoices();
+      const rep = (ok, label) => `<li class="${ok ? 'ok' : 'no'}">${ok ? '✓' : '✗'} ${label}</li>`;
+      const vEn = voiceFor('en'), vEs = voiceFor('es'), vHe = voiceFor('he');
+      $('#audiorep').innerHTML = rep(true, `${t('audioHe')} (${Object.keys(NX.audio).length})${vHe ? ` + ${vHe.name}` : ''}`)
+        + rep(!!vEs, `Español: ${vEs ? vEs.name + ' ' + t('voiceFound') : t('voiceNone')}`) + rep(!!vEn, `English: ${vEn ? vEn.name + ' ' + t('voiceFound') : t('voiceNone')}`);
+      play([{ he: 'שלום' }, ...segments(S.lang === 'es' ? `Hola ${S.name}, así suena la lectura en voz alta.` : `Hi ${S.name}, this is how read-aloud sounds.`, S.lang), { he: 'בהצלחה' }]);
+    },
+    cont: () => { SFX.tap(); advance(); },
+    skip: () => { X.cards.push(X.cards[X.i]); X.i++; drawCard(); },
+    quitAsk: () => { if (X.i === 0 || confirm(t('quitQ'))) closeSession(X.back || '#/'); },
+    closeTo: h => closeSession(h),
+    retrySession: () => { const o = X; session(o.cards.filter(c => !c.retried), { back: o.back, xpBase: o.xpBase, onEnd: o.onEnd, doneTitle: o.doneTitle }); },
+    speedRestart: () => R.speed(SP.id),
+    planTick: (k, v) => { S.plan[k] = v; if (v) { SFX.win(); confetti(); } touch(v ? 25 : 0); R.plan(); },
+    setName: v => { S.name = v.trim() || 'Mary'; save(); route(); },
+    setLang: l => { S.lang = l; save(); route(); },
+    setOpt: (k, v) => { S[k] = v; save(); route(); },
+    reset: () => { if (confirm(t('resetQ'))) { S = Object.assign({}, def, { lang: S.lang, name: S.name, planStart: today() }); save(); route(); } }
+  };
+  route();
+})();

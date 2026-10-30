@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Lev · Nursing Prep</title>
+  <meta name="description" content="Mary's playful study app for the Israeli Registered Nurse simulation licensing exam, in English and Spanish with medical Hebrew.">
+  <meta name="theme-color" content="#58cc02">
+  <link rel="icon" href="img/heart.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800;900&family=Rubik:wght@500;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <a class="logo" href="#/"><span class="logo-mark" id="logoMark"></span><span>lev<b>.</b></span></a>
+      <nav class="sidenav">
+        <a data-nav="learn" href="#/"><img src="img/books.png" alt=""><span></span></a>
+        <a data-nav="sim" href="#/sim"><img src="img/sim.png" alt=""><span></span></a>
+        <a data-nav="practice" href="#/practice"><img src="img/target.png" alt=""><span></span></a>
+        <a data-nav="plan" href="#/plan"><img src="img/calendar.png" alt=""><span></span></a>
+        <a data-nav="exam" href="#/exam"><img src="img/clipboard.png" alt=""><span></span></a>
+        <a data-nav="me" href="#/me"><img src="img/mary.png" alt=""><span></span></a>
+      </nav>
+    </aside>
+
+    <header class="mbar" id="mbar"></header>
+    <main id="app" aria-live="polite"></main>
+    <aside class="rail" id="rail"></aside>
+  </div>
+
+  <nav class="tabbar">
+    <a data-nav="learn" href="#/"><img src="img/books.png" alt=""><span></span></a>
+    <a data-nav="sim" href="#/sim"><img src="img/sim.png" alt=""><span></span></a>
+    <a data-nav="practice" href="#/practice"><img src="img/target.png" alt=""><span></span></a>
+    <a data-nav="plan" href="#/plan"><img src="img/calendar.png" alt=""><span></span></a>
+    <a data-nav="exam" href="#/exam"><img src="img/clipboard.png" alt=""><span></span></a>
+  </nav>
+
+  <div id="overlay" hidden></div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <template id="exam-en">
+    <section class="exam-hero card pop">
+      <img src="img/mary.png" alt="" class="float">
+      <div>
+        <small class="kicker">Mary’s exam</small>
+        <h1>Simulation Licensure Exam</h1>
+        <p class="big-date">Wednesday · 18 November 2026</p>
+        <p>MSR – Israel Center for Medical Simulation, Tel HaShomer</p>
+      </div>
+    </section>
+    <div class="cards2">
+      <article class="card info">
+        <h2><img src="img/sim.png" alt="">What it is</h2>
+        <p>The Ministry of Health’s licensing exam for <b>new immigrant registered nurses</b> with long experience abroad. Instead of multiple-choice questions it <b>assesses how you perform and manage patient care in virtual-reality scenarios</b>.</p>
+        <ul>
+          <li>Languages: English, French, <b>Spanish</b>, Russian or Hebrew.</li>
+          <li>It is based on the <b>mandatory reading list</b> for <a href="https://www1.health.gov.il/media/dolauqai/sep-dec2026.pdf" target="_blank" rel="noopener">September–December 2026</a>. Everything in this app follows that list (including <b>CPR by AHA 2020</b>).</li>
+          <li>Your invitation with the exact time appears in the portal about <b>two weeks before</b>. Print it and bring it with your ID.</li>
+          <li>The Ministry does not publish the number of scenarios, their length or the scoring.</li>
+        </ul>
+      </article>
+      <article class="card info">
+        <h2><img src="img/steth.png" alt="">How to shine in a simulation</h2>
+        <p class="muted">General simulation-exam habits. They are not official rules for this exam.</p>
+        <ol>
+          <li><b>Safety first:</b> hand hygiene, introduce yourself, check identity with 2 identifiers, check allergies.</li>
+          <li><b>Assess before you act</b> (unless the patient is crashing): ABCDE, vital signs, glucose when the patient is confused.</li>
+          <li><b>Prioritize out loud:</b> “Airway first…”. Examiners can’t score what they can’t see.</li>
+          <li><b>Call for help early</b> and hand over with <b>SBAR</b>.</li>
+          <li><b>Re-assess</b> after every intervention.</li>
+          <li><b>Talk to the patient and family</b>: calm, honest, no false reassurance, use an interpreter if needed.</li>
+          <li><b>Document</b>: what, when, the response, and who you informed.</li>
+        </ol>
+      </article>
+      <article class="card info">
+        <h2><img src="img/books.png" alt="">Mary’s reading list (Sept–Dec 2026)</h2>
+        <ul>
+          <li>6 textbooks: Kozier &amp; Erb (Fundamentals), Brunner &amp; Suddarth (Med-Surg), Wong (Pediatrics), Olds (Maternal-Newborn), Townsend (Psychiatry), Nursing Drug Handbook 2025-2026.</li>
+          <li>AHA 2020: Adult BLS and First Aid.</li>
+          <li>Laws on patient rights (Patient’s Rights, Dying Patient, Mental Health…) and on nursing practice.</li>
+          <li>50 Nursing Division circulars, 11 Director-General circulars, 10 Medical Administration circulars, the Nurses’ Code of Ethics and the MOH immunization guide.</li>
+        </ul>
+      </article>
+      <article class="card info">
+        <h2><img src="img/bulb.png" alt="">Good to know</h2>
+        <ul>
+          <li>The Ministry schedule page also mentions a simulation date on <b>23.11.26</b>. Trust the time on Mary’s own invitation.</li>
+          <li>After passing, a temporary work permit is valid for 3 years. Hebrew proficiency must be proven within that time, so keep going with the Hebrew lessons.</li>
+          <li>Questions about eligibility go to the Nursing Division Certification Department, phone *5400.</li>
+        </ul>
+        <p class="links">
+          <a href="https://www1.health.gov.il/en/nursing/catch-up/conferences-events/registered-nurse-licensure-exams/exam-for-new-immigrants-2/" target="_blank" rel="noopener">Official exam page ↗</a>
+          <a href="https://www1.health.gov.il/en/nursing/work/immigrant-nurses/registered-nurse-abroad-studies-olim/" target="_blank" rel="noopener">Immigrant nurses ↗</a>
+        </p>
+      </article>
+    </div>
+  </template>
+
+  <template id="exam-es">
+    <section class="exam-hero card pop">
+      <img src="img/mary.png" alt="" class="float">
+      <div>
+        <small class="kicker">El examen de Mary</small>
+        <h1>Examen de licencia por simulación</h1>
+        <p class="big-date">Miércoles · 18 de noviembre de 2026</p>
+        <p>MSR – Centro Israelí de Simulación Médica, Tel HaShomer</p>
+      </div>
+    </section>
+    <div class="cards2">
+      <article class="card info">
+        <h2><img src="img/sim.png" alt="">Qué es</h2>
+        <p>El examen de licencia del Ministerio de Salud para <b>enfermeras inmigrantes</b> con larga experiencia en el extranjero. En lugar de preguntas tipo test, <b>evalúa cómo realizas y gestionas el cuidado del paciente en escenarios de realidad virtual</b>.</p>
+        <ul>
+          <li>Idiomas: inglés, francés, <b>español</b>, ruso o hebreo.</li>
+          <li>Se basa en la <b>bibliografía obligatoria</b> de <a href="https://www1.health.gov.il/media/dolauqai/sep-dec2026.pdf" target="_blank" rel="noopener">septiembre–diciembre 2026</a>. Todo en esta app sigue esa lista (incluida la <b>RCP según AHA 2020</b>).</li>
+          <li>La invitación con la hora exacta aparece en el portal unas <b>dos semanas antes</b>. Imprímela y llévala con tu documento de identidad.</li>
+          <li>El Ministerio no publica cuántos escenarios hay, cuánto duran ni cómo se puntúan.</li>
+        </ul>
+      </article>
+      <article class="card info">
+        <h2><img src="img/steth.png" alt="">Cómo brillar en una simulación</h2>
+        <p class="muted">Buenas prácticas generales en exámenes de simulación. No son reglas oficiales de este examen.</p>
+        <ol>
+          <li><b>Seguridad primero:</b> higiene de manos, presentarte, identidad con 2 identificadores, alergias.</li>
+          <li><b>Valora antes de actuar</b> (salvo que el paciente se desplome): ABCDE, constantes y glucemia si está confuso.</li>
+          <li><b>Prioriza en voz alta:</b> “Primero la vía aérea…”. Lo que no se ve no se puntúa.</li>
+          <li><b>Pide ayuda pronto</b> y comunica con <b>SBAR</b>.</li>
+          <li><b>Revalora</b> tras cada intervención.</li>
+          <li><b>Habla con el paciente y la familia</b>: con calma y honestidad, sin falsas promesas, con intérprete si hace falta.</li>
+          <li><b>Documenta</b>: qué, cuándo, la respuesta y a quién avisaste.</li>
+        </ol>
+      </article>
+      <article class="card info">
+        <h2><img src="img/books.png" alt="">La bibliografía de Mary (sept–dic 2026)</h2>
+        <ul>
+          <li>6 libros: Kozier &amp; Erb (Fundamentos), Brunner &amp; Suddarth (Médico-quirúrgica), Wong (Pediatría), Olds (Materno-neonatal), Townsend (Psiquiatría), Nursing Drug Handbook 2025-2026.</li>
+          <li>AHA 2020: SVB del adulto y primeros auxilios.</li>
+          <li>Leyes sobre derechos del paciente (Derechos del Paciente, Paciente Terminal, Salud Mental…) y sobre el ejercicio de la enfermería.</li>
+          <li>50 circulares de la División de Enfermería, 11 de la Dirección General, 10 de la Dirección Médica, el Código Ético y la guía de vacunación.</li>
+        </ul>
+      </article>
+      <article class="card info">
+        <h2><img src="img/bulb.png" alt="">Conviene saber</h2>
+        <ul>
+          <li>La página de fechas del Ministerio menciona también una simulación el <b>23.11.26</b>. Confía en la hora de la invitación de Mary.</li>
+          <li>Al aprobar se obtiene un permiso temporal de 3 años. En ese plazo hay que acreditar el hebreo, así que sigue con las lecciones de hebreo.</li>
+          <li>Dudas de elegibilidad: Departamento de Certificación de la División de Enfermería, teléfono *5400.</li>
+        </ul>
+        <p class="links">
+          <a href="https://www1.health.gov.il/en/nursing/catch-up/conferences-events/registered-nurse-licensure-exams/exam-for-new-immigrants-2/" target="_blank" rel="noopener">Página oficial ↗</a>
+          <a href="https://www1.health.gov.il/en/nursing/work/immigrant-nurses/registered-nurse-abroad-studies-olim/" target="_blank" rel="noopener">Enfermeras inmigrantes ↗</a>
+        </p>
+      </article>
+    </div>
+  </template>
+
+  <script src="js/data/core.js"></script>
+  <script src="js/data/m-heb.js"></script>
+  <script src="js/data/m-fund.js"></script>
+  <script src="js/data/m-medsurg.js"></script>
+  <script src="js/data/m-pharm.js"></script>
+  <script src="js/data/m-calc.js"></script>
+  <script src="js/data/m-peds.js"></script>
+  <script src="js/data/m-mat.js"></script>
+  <script src="js/data/m-psych.js"></script>
+  <script src="js/data/m-emerg.js"></script>
+  <script src="js/data/m-law.js"></script>
+  <script src="js/data/sims.js"></script>
+  <script src="js/data/audio.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
