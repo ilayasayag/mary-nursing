@@ -14,11 +14,16 @@
   const UNIT_COLORS = ['#58cc02', '#1cb0f6', '#ce82ff', '#ff9600', '#ff4b4b', '#00cd9c', '#ff86d0', '#2b70c9', '#ffc800', '#7c5cff'];
 
   /* ---------- state ---------- */
-  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, daily: { d: '', xp: 0 }, sims: {}, planStart: '' };
+  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, daily: { d: '', xp: 0 }, sims: {}, planStart: '', updatedAt: 0 };
   let S;
   try { S = Object.assign({}, def, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = Object.assign({}, def); }
   if (!S.planStart) S.planStart = today();
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage blocked: progress lives in memory */ } };
+  let afterSave = null; /* set by cloud sync once signed in */
+  const save = () => {
+    S.updatedAt = Date.now();
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage blocked: progress lives in memory */ }
+    if (afterSave) afterSave();
+  };
 
   /* ---------- i18n ---------- */
   const UI = {
@@ -47,6 +52,12 @@
       readAloud: 'Read aloud', autoRead: 'Read questions aloud automatically', auto: 'Auto', speed2: 'Reading speed', slow: 'Slow', normal: 'Normal',
       testAudio: 'Test audio', audioHe: 'Hebrew: recorded clips', voiceFound: 'voice', voiceNone: 'no voice on this device',
       noVoice: 'This device has no {l} voice. Add one in system settings → Accessibility → Spoken content.',
+      saveTitle: 'Save your progress', localOnly: 'Progress is saved in this browser only. On iPhone, Safari can erase it after a few weeks without use, so sign in or keep a backup.',
+      cloudOff: 'Cloud sign-in is not switched on yet (Ilay needs to add the Firebase settings).', cloudLoading: 'Connecting to cloud save…',
+      cloudPitch: 'Sign in once and your progress is saved online and shared between your phone and computer.', googleBtn: 'Continue with Google',
+      emailPh: 'your@email.com', emailBtn: 'Email me a sign-in link', emailSent: 'Check your email and tap the link to sign in.', emailAgain: 'Confirm your email to finish signing in:',
+      signedInAs: 'Signed in as', syncing: 'Syncing…', syncedAt: 'Saved online at', syncNow: 'Sync now', signOut: 'Sign out',
+      backupBtn: 'Download backup', restoreBtn: 'Restore from backup', restored: 'Progress restored!', restoreBad: 'That file is not a lev backup.',
       disclaimer: 'Unofficial study aid, written from the official MOH topic list and the Sept–Dec 2026 reading list. It does not replace the textbooks. Always check details with the Nursing Division.',
       cheer: ['You’re doing great, {n}!', 'Every lesson is a step closer, {n}.', '¡Vamos, {n}! Keep going.', 'Hebrew + nursing = superpower, {n}.']
     },
@@ -75,6 +86,12 @@
       readAloud: 'Leer en voz alta', autoRead: 'Leer las preguntas en voz alta automáticamente', auto: 'Auto', speed2: 'Velocidad de lectura', slow: 'Lenta', normal: 'Normal',
       testAudio: 'Probar audio', audioHe: 'Hebreo: grabaciones', voiceFound: 'voz', voiceNone: 'no hay voz en este dispositivo',
       noVoice: 'Este dispositivo no tiene voz en {l}. Añádela en Ajustes → Accesibilidad → Contenido leído.',
+      saveTitle: 'Guarda tu progreso', localOnly: 'El progreso se guarda solo en este navegador. En iPhone, Safari puede borrarlo tras unas semanas sin uso: inicia sesión o guarda una copia.',
+      cloudOff: 'El inicio de sesión en la nube aún no está activado (Ilay debe añadir los ajustes de Firebase).', cloudLoading: 'Conectando con la nube…',
+      cloudPitch: 'Inicia sesión una vez y tu progreso se guarda en línea y se comparte entre el móvil y el ordenador.', googleBtn: 'Continuar con Google',
+      emailPh: 'tu@correo.com', emailBtn: 'Enviarme un enlace de acceso', emailSent: 'Revisa tu correo y toca el enlace para entrar.', emailAgain: 'Confirma tu correo para terminar de entrar:',
+      signedInAs: 'Sesión iniciada como', syncing: 'Sincronizando…', syncedAt: 'Guardado en línea a las', syncNow: 'Sincronizar', signOut: 'Cerrar sesión',
+      backupBtn: 'Descargar copia', restoreBtn: 'Restaurar copia', restored: '¡Progreso restaurado!', restoreBad: 'Ese archivo no es una copia de lev.',
       disclaimer: 'Material de estudio no oficial, escrito a partir de los temas oficiales y la bibliografía de sept–dic 2026. No sustituye a los libros. Confirma siempre los detalles con la División de Enfermería.',
       cheer: ['¡Lo estás haciendo genial, {n}!', 'Cada lección te acerca más, {n}.', '¡Vamos, {n}! Sigue así.', 'Hebreo + enfermería = superpoder, {n}.']
     }
@@ -316,11 +333,14 @@
   /* honest provenance on Mary's Sept–Dec 2026 reading list: laws/circulars and AHA were checked against
      their texts; textbook topics were checked against open references, not the (paid) books themselves */
   const BOOK = { fund: 'Kozier & Erb (Fundamentals)', medsurg: 'Brunner & Suddarth (Med-Surg, 16th ed.)', pharm: 'Nursing Drug Handbook 2025-2026',
-    peds: 'Wong’s (Pediatrics)', mat: 'Olds’ (Maternal-Newborn)', psych: 'Townsend (Psychiatric)' };
+    peds: 'Wong’s (Pediatrics, 12th ed.)', mat: 'Olds’ (Maternal-Newborn)', psych: 'Townsend (Psychiatric)' };
+  const SEARCHED = { medsurg: true, peds: true };
   const SOURCE = new Proxy({}, { get: (_, m) =>
     m === 'law' ? (S.lang === 'es' ? 'Leyes israelíes y circulares del Ministerio · verificado con los textos oficiales' : 'Israeli laws and Ministry circulars · checked against the official texts')
     : m === 'emerg' ? (S.lang === 'es' ? 'AHA 2020 SVB adulto y primeros auxilios · verificado con la guía' : 'AHA 2020 Adult BLS and First Aid · checked against the guideline')
-    : BOOK[m] ? (S.lang === 'es' ? `Tema de ${BOOK[m]} · verificado con referencias abiertas, no con el libro` : `Topic from ${BOOK[m]} · checked against open references, not the book itself`)
+    /* Brunner & Suddarth 16th and Wong's 12th are searchable in Google Books; key facts were checked in their text */
+    : SEARCHED[m] ? (S.lang === 'es' ? `${BOOK[m]} · datos clave verificados en el texto del libro (búsqueda de Google Books)` : `${BOOK[m]} · key facts checked in the book's text (Google Books search)`)
+    : BOOK[m] ? (S.lang === 'es' ? `Tema de ${BOOK[m]} · verificado con referencias abiertas (el libro no permite búsqueda)` : `Topic from ${BOOK[m]} · checked against open references (the book is not searchable online)`)
     : undefined });
   const staticMCQ = q => ({ type: 'mcq', id: q.id, m: q.m, d: q.d, a: q.a, title: '', q: `<p class="qtext">${esc(L(q.q))}</p>`, o: q.o.map(o => esc(L(o))), w: esc(L(q.w)), src: SOURCE[q.m] });
 
@@ -741,6 +761,7 @@
         <div class="card">${img('heb')}<b>${Object.values(S.box).filter(b => b >= 4).length}</b><small>עברית</small></div>
       </div>
       <h2>${t('badges')}</h2><div class="badge-grid">${BADGES.map(b => `<div class="badge ${S.badges.includes(b[0]) ? 'on' : ''}">${img(b[1])}<small>${esc(L2([b[2], b[3]]))}</small></div>`).join('')}</div>
+      <h2>${img('check')} ${t('saveTitle')}</h2><section class="card settings" id="cloudbox">${cloudBox()}</section>
       <h2>${t('settings')}</h2><section class="card settings">
         <label>${t('name')} <input value="${esc(S.name)}" maxlength="24" onchange="A.setName(this.value)"></label>
         <label>${t('language')} <span class="seg"><button class="${S.lang === 'en' ? 'on' : ''}" onclick="A.setLang('en')">English</button><button class="${S.lang === 'es' ? 'on' : ''}" onclick="A.setLang('es')">Español</button></span></label>
@@ -752,6 +773,93 @@
         <button class="btn red small" onclick="A.reset()">${t('reset')}</button></section>
       <p class="fine">${t('disclaimer')} · 3D images: Microsoft Fluent Emoji (MIT).</p>`);
   };
+
+  /* ---------- saving progress: backup file + optional cloud sync (Firebase, configured in js/cloud-config.js) ---------- */
+  /* merge two progress objects without losing work done on either device */
+  function merge(a, b) {
+    const newer = (a.updatedAt || 0) >= (b.updatedAt || 0) ? a : b, older = newer === a ? b : a;
+    const m = Object.assign({}, def, older, newer);
+    const maxMap = (x = {}, y = {}) => { const o = { ...x }; for (const k in y) o[k] = Math.max(o[k] || 0, y[k] || 0); return o; };
+    m.xp = Math.max(a.xp || 0, b.xp || 0); m.answered = Math.max(a.answered || 0, b.answered || 0);
+    m.done = { ...a.done, ...b.done }; m.plan = { ...older.plan, ...newer.plan };
+    m.box = maxMap(a.box, b.box); m.best = maxMap(a.best, b.best);
+    m.badges = [...new Set([...(a.badges || []), ...(b.badges || [])])]; m.wrong = [...new Set([...(a.wrong || []), ...(b.wrong || [])])];
+    m.stats = {}; for (const k of new Set([...Object.keys(a.stats || {}), ...Object.keys(b.stats || {})])) { const x = (a.stats || {})[k], y = (b.stats || {})[k]; m.stats[k] = !x ? y : !y ? x : x.n >= y.n ? x : y; }
+    m.sims = {}; for (const k of new Set([...Object.keys(a.sims || {}), ...Object.keys(b.sims || {})])) { const x = (a.sims || {})[k] || {}, y = (b.sims || {})[k] || {}; m.sims[k] = { best: Math.max(x.best || 0, y.best || 0), stars: Math.max(x.stars || 0, y.stars || 0) }; }
+    m.planStart = [a.planStart, b.planStart].filter(Boolean).sort()[0] || today();
+    if ((a.last || '') !== (b.last || '')) { const l = (a.last || '') > (b.last || '') ? a : b; m.last = l.last; m.streak = l.streak; } else m.streak = Math.max(a.streak || 0, b.streak || 0);
+    m.daily = (a.daily || {}).d === (b.daily || {}).d ? { d: a.daily.d, xp: Math.max(a.daily.xp, b.daily.xp) } : ((a.daily || {}).d || '') > ((b.daily || {}).d || '') ? a.daily : b.daily;
+    return m;
+  }
+  function backupDownload() {
+    const blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `lev-progress-${S.name.toLowerCase()}-${today()}.json`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  function backupRestore(file) {
+    if (!file) return;
+    file.text().then(txt => {
+      const data = JSON.parse(txt); if (typeof data !== 'object' || !('xp' in data)) throw new Error('not a backup');
+      S = merge(S, data); save(); toast(t('restored'), 'check'); route();
+    }).catch(() => toast(t('restoreBad'), 'lock'));
+  }
+
+  const CLOUD = window.NX_CLOUD || null;
+  const FB = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  let cloud = { ready: false, user: null, synced: 0, busy: false, err: '' };
+  let pushTimer = null;
+  async function cloudInit() {
+    if (!CLOUD) return;
+    try {
+      const [{ initializeApp }, A_, F_] = await Promise.all([import(FB + 'firebase-app.js'), import(FB + 'firebase-auth.js'), import(FB + 'firebase-firestore.js')]);
+      const app = initializeApp(CLOUD), auth = A_.getAuth(app), db = F_.getFirestore(app);
+      cloud = Object.assign(cloud, { A_, F_, auth, db, ready: true });
+      /* finish an email-link sign-in when Mary comes back from the email */
+      if (A_.isSignInWithEmailLink(auth, location.href)) {
+        let email = ''; try { email = localStorage.getItem('lev.email') || ''; } catch (e) { /* storage blocked */ }
+        if (!email) email = prompt(t('emailAgain')) || '';
+        if (email) { await A_.signInWithEmailLink(auth, email, location.href); try { localStorage.removeItem('lev.email'); } catch (e) { /* storage blocked */ } }
+        history.replaceState(null, '', location.pathname + '#/me');
+      }
+      A_.onAuthStateChanged(auth, async user => {
+        cloud.user = user; afterSave = user ? schedulePush : null;
+        if (user) await cloudPull();
+        refreshCloudBox();
+      });
+    } catch (e) { cloud.err = String(e.message || e); refreshCloudBox(); }
+  }
+  const progressDoc = () => cloud.F_.doc(cloud.db, 'progress', cloud.user.uid);
+  async function cloudPull() {
+    try {
+      cloud.busy = true; refreshCloudBox();
+      const snap = await cloud.F_.getDoc(progressDoc());
+      if (snap.exists()) { S = merge(S, snap.data().state || {}); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage blocked */ } route(); }
+      await cloudPush();
+    } catch (e) { cloud.err = String(e.message || e); } finally { cloud.busy = false; refreshCloudBox(); }
+  }
+  async function cloudPush() {
+    if (!cloud.user) return;
+    try { await cloud.F_.setDoc(progressDoc(), { state: JSON.parse(JSON.stringify(S)), email: cloud.user.email || '', savedAt: Date.now() }); cloud.synced = Date.now(); cloud.err = ''; }
+    catch (e) { cloud.err = String(e.message || e); }
+    refreshCloudBox();
+  }
+  function schedulePush() { clearTimeout(pushTimer); pushTimer = setTimeout(cloudPush, 2500); }
+  function cloudBox() {
+    const backup = `<div class="row"><button class="btn blue" onclick="A.backup()">${img('check')} ${t('backupBtn')}</button>
+      <label class="btn ghost">${t('restoreBtn')}<input type="file" accept="application/json,.json" hidden onchange="A.restore(this.files[0])"></label></div>`;
+    let top;
+    if (!CLOUD) top = `<p class="muted">${t('localOnly')}</p><p class="fine">${t('cloudOff')}</p>`;
+    else if (!cloud.ready) top = `<p class="muted">${cloud.err ? '⚠ ' + esc(cloud.err) : t('cloudLoading')}</p>`;
+    else if (cloud.user) top = `<p>☁️ <b>${t('signedInAs')}</b> ${esc(cloud.user.email || cloud.user.displayName || '')}</p>
+      <p class="muted">${cloud.busy ? t('syncing') : cloud.synced ? `${t('syncedAt')} ${new Date(cloud.synced).toLocaleTimeString()}` : ''}${cloud.err ? ' · ⚠ ' + esc(cloud.err) : ''}</p>
+      <div class="row"><button class="btn green small" onclick="A.syncNow()">${t('syncNow')}</button><button class="btn ghost small" onclick="A.signOut()">${t('signOut')}</button></div>`;
+    else top = `<p class="muted">${t('cloudPitch')}</p>
+      <div class="row"><button class="btn blue" onclick="A.googleIn()">G&nbsp; ${t('googleBtn')}</button></div>
+      <form class="row" onsubmit="A.emailIn(this.email.value);return false"><input name="email" type="email" required placeholder="${t('emailPh')}" autocomplete="email"><button class="btn green">${t('emailBtn')}</button></form>
+      ${cloud.err ? `<p class="fine">⚠ ${esc(cloud.err)}</p>` : ''}`;
+    return top + `<hr>${backup}`;
+  }
+  function refreshCloudBox() { const b = $('#cloudbox'); if (b) b.innerHTML = cloudBox(); }
 
   /* ---------- router & events ---------- */
   function route() {
@@ -797,7 +905,16 @@
     setName: v => { S.name = v.trim() || 'Mary'; save(); route(); },
     setLang: l => { S.lang = l; save(); route(); },
     setOpt: (k, v) => { S[k] = v; save(); route(); },
-    reset: () => { if (confirm(t('resetQ'))) { S = Object.assign({}, def, { lang: S.lang, name: S.name, planStart: today() }); save(); route(); } }
+    reset: () => { if (confirm(t('resetQ'))) { S = Object.assign({}, def, { lang: S.lang, name: S.name, planStart: today() }); save(); route(); } },
+    backup: backupDownload, restore: backupRestore,
+    googleIn: async () => { try { await cloud.A_.signInWithPopup(cloud.auth, new cloud.A_.GoogleAuthProvider()); } catch (e) { cloud.err = String(e.code || e.message || e); refreshCloudBox(); } },
+    emailIn: async email => {
+      try { await cloud.A_.sendSignInLinkToEmail(cloud.auth, email, { url: location.origin + location.pathname, handleCodeInApp: true }); try { localStorage.setItem('lev.email', email); } catch (e) { /* storage blocked */ } toast(t('emailSent'), 'check'); }
+      catch (e) { cloud.err = String(e.code || e.message || e); refreshCloudBox(); }
+    },
+    syncNow: () => cloudPull(),
+    signOut: async () => { await cloud.A_.signOut(cloud.auth); refreshCloudBox(); }
   };
   route();
+  cloudInit();
 })();
