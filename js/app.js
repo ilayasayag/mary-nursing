@@ -64,6 +64,16 @@
       testAudio: 'Test audio', audioHe: 'Hebrew: recorded clips', voiceFound: 'voice', voiceNone: 'no voice on this device',
       autoVoice: 'Automatic', voicesTitle: 'Reading voice', voiceTip: 'For a natural, human voice, download a free better voice once: iPhone: Settings → Accessibility → Read & Speak (Spoken Content) → Voices → English → “Ava (Premium)” or “Samantha (Enhanced)”; Spanish → “Mónica (Enhanced)” or “Paulina (Enhanced)”. Mac: System Settings → Accessibility → Read & Speak → System voice → Manage voices. Then reopen the app and pick it here (★ = better voice).',
       noVoice: 'This device has no {l} voice. Add one in system settings → Accessibility → Spoken content.',
+      gamesExam: 'Exam games', gamesHeb: 'Hebrew games',
+      triage: 'Triage Rush', triageD: 'Four patients, one nurse. Tap them in the order you would see them.',
+      medpass: 'Med Pass', medpassD: 'Read the order and the chart: give, hold or clarify?',
+      vitals: 'Vital Check', vitalsD: 'Low, normal or high? Watch where the value lands on the gauge.',
+      rain: 'Word Rain', rainD: 'Hebrew words fall from the sky. Tap the meaning before they land!',
+      memory: 'Memory Flip', memoryD: 'Flip the cards to pair each Hebrew word with its meaning.',
+      pickHe: 'Which is the Hebrew?', pickMeaning: 'What does it mean?', modeQuiz: '4 options', modeFlip: 'Flip card',
+      tapOrder: 'Tap the patients in the order you would see them', round: 'Round', yourRank: 'You', rightRank: 'Correct', perfect: 'Perfect!', undoTip: 'Tap a numbered card to undo it',
+      give: 'Give', hold: 'Hold & report', clarify: 'Stop & clarify', orderLbl: 'Medication order', chart: 'Patient chart',
+      low: 'Low', normalBtn: 'Normal', high: 'High', normalRange: 'Normal range', lives: 'Lives', levelUp: 'Level up!', gameOver: 'Game over', moves: 'moves', streakLbl: 'streak',
       saveTitle: 'Save your progress', localOnly: 'Progress is saved on this device, in two places. On iPhone, Safari can erase website data after a few weeks without use, so install the app or send yourself a copy every few days. To continue on another phone or computer, open that link there.',
       cloudOff: 'Cloud sign-in is not switched on yet (Ilay needs to add the Firebase settings).', cloudLoading: 'Connecting to cloud save…',
       cloudPitch: 'Sign in once and your progress is saved online and shared between your phone and computer.', googleBtn: 'Continue with Google',
@@ -107,6 +117,16 @@
       testAudio: 'Probar audio', audioHe: 'Hebreo: grabaciones', voiceFound: 'voz', voiceNone: 'no hay voz en este dispositivo',
       autoVoice: 'Automática', voicesTitle: 'Voz de lectura', voiceTip: 'Para una voz natural, descarga una vez una voz mejor (gratis): iPhone: Ajustes → Accesibilidad → Leer y hablar (Contenido leído) → Voces → Español → “Mónica (mejorada)” o “Paulina (mejorada)”; Inglés → “Ava (Premium)”. Mac: Ajustes del Sistema → Accesibilidad → Leer y hablar → Voz del sistema → Gestionar voces. Luego vuelve a abrir la app y elígela aquí (★ = voz mejor).',
       noVoice: 'Este dispositivo no tiene voz en {l}. Añádela en Ajustes → Accesibilidad → Contenido leído.',
+      gamesExam: 'Juegos de examen', gamesHeb: 'Juegos de hebreo',
+      triage: 'Carrera de triaje', triageD: 'Cuatro pacientes, una enfermera. Tócalos en el orden en que los atenderías.',
+      medpass: 'Ronda de medicación', medpassD: 'Lee la orden y la historia: ¿dar, suspender o aclarar?',
+      vitals: 'Control de valores', vitalsD: '¿Bajo, normal o alto? Mira dónde cae el valor en el indicador.',
+      rain: 'Lluvia de palabras', rainD: 'Caen palabras en hebreo. ¡Toca el significado antes de que lleguen al suelo!',
+      memory: 'Memoria', memoryD: 'Gira las cartas para unir cada palabra hebrea con su significado.',
+      pickHe: '¿Cuál es en hebreo?', pickMeaning: '¿Qué significa?', modeQuiz: '4 opciones', modeFlip: 'Girar tarjeta',
+      tapOrder: 'Toca a los pacientes en el orden en que los atenderías', round: 'Ronda', yourRank: 'Tú', rightRank: 'Correcto', perfect: '¡Perfecto!', undoTip: 'Toca una tarjeta numerada para deshacerla',
+      give: 'Dar', hold: 'Suspender y avisar', clarify: 'Parar y aclarar', orderLbl: 'Orden de medicación', chart: 'Historia del paciente',
+      low: 'Bajo', normalBtn: 'Normal', high: 'Alto', normalRange: 'Rango normal', lives: 'Vidas', levelUp: '¡Subes de nivel!', gameOver: 'Fin del juego', moves: 'movimientos', streakLbl: 'racha',
       saveTitle: 'Guarda tu progreso', localOnly: 'El progreso se guarda en este dispositivo, en dos lugares. En iPhone, Safari puede borrar los datos de las webs tras unas semanas sin uso: instala la app o envíate una copia cada pocos días. Para seguir en otro móvil u ordenador, abre ese enlace allí.',
       cloudOff: 'El inicio de sesión en la nube aún no está activado (Ilay debe añadir los ajustes de Firebase).', cloudLoading: 'Conectando con la nube…',
       cloudPitch: 'Inicia sesión una vez y tu progreso se guarda en línea y se comparte entre el móvil y el ordenador.', googleBtn: 'Continuar con Google',
@@ -270,7 +290,9 @@
     ['streak7', 'fire', '7-day streak', '7 días seguidos', () => S.streak >= 7],
     ['rush15', 'speed', 'Priority Rush 15+', 'Carrera de prioridades 15+', () => (S.best.speed || 0) >= 15],
     ['heb50', 'heb', '50 Hebrew words', '50 palabras', () => Object.values(S.box).filter(b => b >= 4).length >= 50],
-    ['mock', 'trophy', 'Mock exam done', 'Simulacro hecho', () => !!S.best.mock]
+    ['mock', 'trophy', 'Mock exam done', 'Simulacro hecho', () => !!S.best.mock],
+    ['triageAce', 'emerg', 'Triage ace', 'As del triaje', () => (S.best.triageAce || 0) >= 1],
+    ['medsafe', 'pharm', 'Safe med pass', 'Medicación segura', () => (S.best.medpassPerfect || 0) >= 1]
   ];
   function touch(xp) {
     const d = today();
@@ -334,6 +356,7 @@
       ${S.xp >= 30 && Date.now() - (S.lastBackup || 0) > 3 * 864e5 && Date.now() > (S.remindAfter || 0) ? `<section class="remind card pop">${img('phone', 'wiggle')}<div><b>${t('remindTitle')}</b><p>${t('remindD')}</p>
         <div class="row"><button class="btn green small" onclick="A.share()">${t('shareBtn')}</button><button class="btn ghost small" onclick="A.remindLater()">${t('later')}</button></div></div></section>` : ''}
       <a class="sim-cta tilt" href="#/sim">${img('sim', 'wiggle')}<div><b>${t('simTitle')}</b><span>${S.lang === 'es' ? `${Object.keys(S.sims).length} de ${NX.sims.length} casos hechos · practica para el 18/11` : `${Object.keys(S.sims).length} of ${NX.sims.length} cases done · practice for 18/11`}</span></div><span class="go">→</span></a>
+      <div class="games-strip">${[['triage', 'emerg'], ['medpass', 'pharm'], ['vitals', 'thermo'], ['rain', 'heb'], ['memory', 'flash']].map(([k, i], n) => `<a href="#/${k}" class="gs tilt" style="--d:${n * 60}ms">${img(i, 'wiggle')}<span>${t(k)}</span></a>`).join('')}</div>
       ${NX.modules.map((m, u) => {
         const col = UNIT_COLORS[u % UNIT_COLORS.length];
         const nodes = m.lessons.map((l, i) => ({ k: i, title: L(l.t) })).concat([{ k: 'q', title: t('unitQuiz') }]);
@@ -376,8 +399,28 @@
     : SEARCHED[m] ? (S.lang === 'es' ? `${BOOK[m]} · datos clave verificados en el texto del libro (búsqueda de Google Books)` : `${BOOK[m]} · key facts checked in the book's text (Google Books search)`)
     : BOOK[m] ? (S.lang === 'es' ? `Tema de ${BOOK[m]} · verificado con referencias abiertas (el libro no permite búsqueda)` : `Topic from ${BOOK[m]} · checked against open references (the book is not searchable online)`)
     : undefined });
+  /* ---------- make facts visual ----------
+     values with units/ranges become chips, gas formulas get subscripts, "never" stands out, circulars become badges,
+     and a dense paragraph of 3+ facts becomes a list of fact rows. Text content is unchanged, so read-aloud still works. */
+  const UNIT = '(?:%|°C|mmHg|mg\\/dL|mmol\\/L|mEq\\/L|ng\\/mL|g\\/dL|×10³\\/µL|\\/min|bpm|kg|mg|mcg|mL|L\\/min|cm|h|hours?|horas?|min(?:utes?|utos?)?|weeks?|semanas?|months?|meses|days?|días|years?|años|lb|units?|unidades|s)';
+  const NUM = '(?:[<>≥≤]\\s?)?\\d+(?:[.,]\\d+)?';
+  const VALUE_RE = new RegExp(`(^|[\\s(“"/])(${NUM}\\s?[-–]\\s?${NUM}(?:\\s?${UNIT})?|${NUM}\\s?${UNIT}|\\d+[.,]\\d+)(?=$|[\\s),.;:”"!?])`, 'g');
+  function chips(html) {
+    return html
+      .replace(VALUE_RE, (m, pre, v) => `${pre}<span class="val">${v}</span>`)
+      .replace(/\b(SpO|PaCO|HCO|CO|O)([23])\b/g, '$1<sub>$2</sub>')
+      .replace(/\b((?:circular|circulares|Circular|circulars)\s+\d+\/\d{2,4}(?:\s*(?:,|y|and)\s*\d+\/\d{2,4})*)/g, '<span class="ref">$1</span>')
+      .replace(/\b(never|Never|NEVER|nunca|Nunca|NOT|NO)\b/g, '<b class="warn">$1</b>');
+  }
+  const SENTENCE_SPLIT = /(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ¿¡(“])/;
+  function richText(escaped, rows = true) {
+    const parts = escaped.split(SENTENCE_SPLIT);
+    if (rows && parts.length >= 3 && escaped.length > 110)
+      return `<ul class="facts">${parts.map(x => `<li>${hint(chips(x.replace(/\.$/, '')))}</li>`).join('')}</ul>`;
+    return hint(chips(escaped));
+  }
   const uniqVocab = list => { const seen = new Set(); return list.filter(v => { const k1 = 'h' + v.he, k2 = 'm' + meaning(v); if (seen.has(k1) || seen.has(k2)) return false; seen.add(k1); seen.add(k2); return true; }); };
-  const staticMCQ = q => ({ type: 'mcq', id: q.id, m: q.m, d: q.d, a: q.a, title: '', q: `<p class="qtext">${esc(L(q.q))}</p>`, o: q.o.map(o => esc(L(o))), w: esc(L(q.w)), src: SOURCE[q.m] });
+  const staticMCQ = q => ({ type: 'mcq', id: q.id, m: q.m, d: q.d, a: q.a, title: '', q: `<p class="qtext">${chips(esc(L(q.q)))}</p>`, o: q.o.map(o => chips(esc(L(o)))), w: chips(esc(L(q.w))), src: SOURCE[q.m] });
 
   /* ---------- SESSION engine (Duolingo-style overlay) ---------- */
   let X = null;
@@ -506,7 +549,7 @@
   /* lesson & quiz sessions */
   R.lesson = (id, i) => {
     const m = modById(id); i = +i; const l = m && m.lessons[i]; if (!l) return R.learn();
-    const teach = l.p.map(p => ({ type: 'teach', html: hint(esc(L(p))) }));
+    const teach = l.p.map(p => ({ type: 'teach', html: richText(esc(L(p))) }));
     let cards = [];
     if (id === 'heb') {
       /* the Hebrew unit itself: words, pairs and listening */
@@ -624,8 +667,8 @@
     $('#step').innerHTML = `<div class="step-in pop"><div class="step-top"><span class="skill ${st.k}">${t('skills')[st.k]}</span>
       <button class="readbtn" onclick="A.readStep()" aria-label="${t('readAloud')}" title="${t('readAloud')}">${img('speaker')}</button>
       <button class="autochip ${S.autoRead ? 'on' : ''}" onclick="A.toggleAuto(this)" aria-pressed="${S.autoRead}" title="${t('autoRead')}">${t('auto')}</button></div>
-      <p class="situation">${L2(st.s)}</p>
-      <div class="choices">${order.map((k, n) => `<button class="choice" data-k="${k}" onclick="A.simPick(${k})"><kbd>${n + 1}</kbd><span>${esc(L2([st.c[k][1], st.c[k][2]]))}</span></button>`).join('')}</div>
+      <p class="situation">${chips(esc(L2(st.s)))}</p>
+      <div class="choices">${order.map((k, n) => `<button class="choice" data-k="${k}" onclick="A.simPick(${k})"><kbd>${n + 1}</kbd><span>${chips(esc(L2([st.c[k][1], st.c[k][2]])))}</span></button>`).join('')}</div>
       <div id="simfb"></div></div>`;
     if (S.autoRead) setTimeout(() => { if (SIM && SIM.s.steps[SIM.i] === st) readStep(); }, SIM.i === 0 ? 600 : 300);
   }
@@ -641,7 +684,7 @@
     } else SFX.no();
     const cls = sc === 2 ? 'good' : sc === 1 ? 'meh' : 'bad', label = sc === 2 ? `+2 ${t('pts')}` : sc === 1 ? `+1 ${t('pts')}` : sc === 0 ? `0 ${t('pts')}` : (S.lang === 'es' ? '⚠ Inseguro' : '⚠ Unsafe');
     const last = SIM.i === SIM.s.steps.length - 1;
-    $('#simfb').innerHTML = `<div class="simfb ${cls} pop"><b>${label}</b><p>${esc(L2([c[3], c[4]]))}</p>
+    $('#simfb').innerHTML = `<div class="simfb ${cls} pop"><b>${label}</b><p>${chips(esc(L2([c[3], c[4]])))}</p>
       <button class="btn ${sc === 2 ? 'green' : sc === 1 ? 'orange' : 'red'}" onclick="A.simNext()">${last ? t('debrief') : t('next')} →</button></div>`;
     if (S.autoRead) setTimeout(() => readParts([L2([c[3], c[4]])]), sc === -1 ? 1000 : 400);
     touch(sc === 2 ? 4 : 1);
@@ -665,11 +708,15 @@
 
   /* ---------- PRACTICE hub & games ---------- */
   R.practice = () => {
-    const games = [['mock', 'mock', '#/mock', S.best.mock ? `${t('record')}: ${S.best.mock}%` : ''], ['speed', 'speed', '#/speed', S.best.speed ? `${t('record')}: ${S.best.speed}` : ''],
-      ['match', 'match', '#/match', ''], ['review', 'review', '#/review', `${S.wrong.length}`], ['flash', 'flash', '#/flash/all', '']];
+    const card = ([k, im, h, sub], i, col) => `<a class="card game tilt" href="${h}" style="--d:${i * 50}ms;--g:${col}">
+        ${img(im, 'wiggle')}<h3>${t(k)}</h3><p>${t(k + 'D')}</p>${sub ? `<span class="chip">${sub}</span>` : ''}${['triage', 'medpass', 'vitals', 'rain', 'memory'].includes(k) ? `<span class="new-tag">NEW</span>` : ''}</a>`;
+    const rec = k => S.best[k] ? `${t('record')}: ${S.best[k]}${k === 'mock' ? '%' : ''}` : '';
+    const exam = [['triage', 'emerg', '#/triage', rec('triage')], ['medpass', 'pharm', '#/medpass', rec('medpass')], ['vitals', 'thermo', '#/vitals', rec('vitals')],
+      ['mock', 'mock', '#/mock', rec('mock')], ['speed', 'speed', '#/speed', rec('speed')], ['match', 'match', '#/match', ''], ['review', 'review', '#/review', `${S.wrong.length}`]];
+    const heb = [['rain', 'heb', '#/rain', rec('rain')], ['memory', 'flash', '#/memory', S.best.memory ? `${t('record')}: ${S.best.memory} ${t('moves')}` : ''], ['flash', 'books', '#/flash/all', '']];
     view(`<section class="page-head">${img('target', 'head-img float')}<div><h1>${t('practice')}</h1></div></section>
-      <div class="game-grid">${games.map(([k, im, h, sub], i) => `<a class="card game tilt" href="${h}" style="--d:${i * 60}ms;--g:${UNIT_COLORS[i]}">
-        ${img(im, 'wiggle')}<h3>${t(k)}</h3><p>${t(k + 'D')}</p>${sub ? `<span class="chip">${sub}</span>` : ''}</a>`).join('')}</div>`);
+      <h2 class="sec">${img('steth')} ${t('gamesExam')}</h2><div class="game-grid">${exam.map((g, i) => card(g, i, UNIT_COLORS[i % UNIT_COLORS.length])).join('')}</div>
+      <h2 class="sec">${img('heb')} ${t('gamesHeb')}</h2><div class="game-grid">${heb.map((g, i) => card(g, i + 7, UNIT_COLORS[(i + 3) % UNIT_COLORS.length])).join('')}</div>`);
   };
   R.mock = () => {
     const total = NX.qs.filter(q => q.m !== 'heb').length;
@@ -684,13 +731,29 @@
   R.flash = id => {
     id = id || 'all'; const pool = deckPool(id); if (!pool.length) return R.practice();
     const minBox = Math.min(...pool.map(v => S.box[v.id] || 0)), v = pick(pool.filter(x => (S.box[x.id] || 0) === minBox));
-    const mastered = pool.filter(x => (S.box[x.id] || 0) >= 4).length; F = { id, v };
-    view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><div class="game-top"><h1>${img('flash')} ${t('flash')}</h1>${deckPicker('flash', id)}</div>
-      <div class="mbar-mini wide"><i style="width:${100 * mastered / pool.length}%"></i></div><p class="muted">${mastered}/${pool.length} ${t('mastered')}</p>
-      <div class="flip" id="flip" onclick="A.flip()"><div class="face front">${img(v.m, 'face-img')}<b>${esc(meaning(v))}</b><span class="muted">${t('reveal')} 👆</span></div>
+    const mastered = pool.filter(x => (S.box[x.id] || 0) >= 4).length, quiz = (S.flashMode || 'quiz') === 'quiz';
+    const toHe = Math.random() < .5;
+    F = { id, v, quiz, toHe, done: false, opts: quiz ? shuffle([v, ...shuffle(uniqVocab(pool.filter(x => x.he !== v.he && meaning(x) !== meaning(v)))).slice(0, 3)]) : [] };
+    const heBig = `<span class="he huge" lang="he" dir="rtl">${v.he}</span>${S.hints ? `<i>${esc(v.tr)}</i>` : ''}`;
+    const front = quiz && !toHe ? `${heBig}<span class="muted">${t('pickMeaning')}</span>` : `${img(v.m, 'face-img')}<b>${esc(meaning(v))}</b><span class="muted">${quiz ? t('pickHe') : t('reveal') + ' 👆'}</span>`;
+    view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><div class="game-top"><h1>${img('flash')} ${t('flash')}</h1>
+        <span class="seg"><button class="${quiz ? 'on' : ''}" onclick="A.flashMode('quiz')">${t('modeQuiz')}</button><button class="${quiz ? '' : 'on'}" onclick="A.flashMode('flip')">${t('modeFlip')}</button></span>${deckPicker('flash', id)}</div>
+      <div class="mbar-mini wide"><i style="width:${100 * mastered / pool.length}%"></i></div><p class="muted">${mastered}/${pool.length} ${t('mastered')} · 📦 ${S.box[v.id] || 0}</p>
+      <div class="flip ${quiz ? 'quizcard' : ''}" id="flip" ${quiz ? '' : 'onclick="A.flip()"'}><div class="face front">${front}</div>
       <div class="face back"><span class="he huge" lang="he" dir="rtl">${v.he}</span><i>${esc(v.tr)}</i><b>${esc(meaning(v))}</b></div></div>
-      <div class="row center"><button class="btn red" onclick="A.grade(0)">${t('notyet')}</button><button class="btn blue round" data-say="${v.he}">${img('speaker')}</button><button class="btn green" onclick="A.grade(1)">${t('know')}</button></div>`);
+      ${quiz ? `<div class="choices tiles flashopts">${F.opts.map((o, k) => `<button class="choice" onclick="A.flashPick(${k})">${toHe ? `<span class="he" lang="he" dir="rtl">${o.he}</span>` : `<span>${esc(meaning(o))}</span>`}</button>`).join('')}</div><div class="row center" id="flashnext"></div>`
+        : `<div class="row center"><button class="btn red" onclick="A.grade(0)">${t('notyet')}</button><button class="btn blue round" data-say="${v.he}">${img('speaker')}</button><button class="btn green" onclick="A.grade(1)">${t('know')}</button></div>`}`);
+    if (quiz && !toHe) setTimeout(() => play([{ he: v.he }]), 350);
   };
+  function flashPick(k) {
+    if (!F || F.done) return; F.done = true;
+    const ok = F.opts[k] === F.v, btns = document.querySelectorAll('.flashopts .choice');
+    btns.forEach((b, j) => { b.disabled = true; if (F.opts[j] === F.v) b.classList.add('right'); else if (j === k) b.classList.add('bad'); });
+    S.box[F.v.id] = ok ? Math.min(5, (S.box[F.v.id] || 0) + 1) : 1; stat(F.v.m, ok);
+    ok ? SFX.ok() : SFX.no(); touch(ok ? 3 : 1);
+    setTimeout(() => { const f = $('#flip'); if (f) f.classList.add('on'); play([{ he: F.v.he }, ...segments(meaning(F.v), S.lang)]); }, 350);
+    $('#flashnext').innerHTML = `<button class="btn green wide" onclick="A.flashNext()">${t('next')} →</button>`;
+  }
   function flip() { const f = $('#flip'); f.classList.toggle('on'); SFX.tap(); if (f.classList.contains('on')) speak(F.v.he); }
   function grade(ok) { S.box[F.v.id] = ok ? Math.min(5, (S.box[F.v.id] || 0) + 1) : 1; ok ? SFX.ok() : SFX.tap(); touch(ok ? 3 : 1); R.flash(F.id); }
 
@@ -758,8 +821,8 @@
   /* aligned to the END: the last entry is always the day before the exam */
   const SPRINT = [
     ['sim', 'mi', 'fund'], ['sim', 'hypo', 'medsurg'], ['sim', 'ana', 'pharm'], ['sim', 'bleed', 'medsurg'], ['sim', 'copd', 'law'], ['sim', 'stroke', 'emerg'],
-    ['sim', 'pph', 'mat'], ['sim', 'child', 'peds'], ['sim', 'psy', 'psych'], ['law', 'rush'], ['match', 'review'], ['mock'], ['simall', 'rush'], ['law', 'review'],
-    ['simall', 'fund'], ['mock', 'review'], ['simall', 'emerg'], ['simall'], ['rest']
+    ['sim', 'pph', 'mat'], ['sim', 'child', 'peds'], ['sim', 'psy', 'psych'], ['law', 'triage'], ['medpass', 'rain'], ['mock'], ['simall', 'vitals'], ['law', 'review'],
+    ['triage', 'medpass'], ['mock', 'review'], ['simall', 'memory'], ['simall'], ['rest']
   ];
   R.plan = () => {
     const start = new Date(S.planStart + 'T12:00:00'), end = new Date('2026-11-17T12:00:00');
@@ -773,6 +836,8 @@
       if (kind === 'review') return `<a href="#/review">${img('review')} ${t('review')}</a>`;
       if (kind === 'rush') return `<a href="#/speed">${img('speed')} ${t('speed')}</a>`;
       if (kind === 'match') return `<a href="#/match">${img('match')} ${t('match')}</a>`;
+      const GAME_IMG = { triage: 'emerg', medpass: 'pharm', vitals: 'thermo', rain: 'heb', memory: 'flash' };
+      if (GAME_IMG[kind]) return `<a href="#/${kind}">${img(GAME_IMG[kind])} ${t(kind)}</a>`;
       if (kind === 'rest') return `<span>${img('heart')} ${S.lang === 'es' ? 'Repaso suave, revisa la invitación, descansa' : 'Light review, check your invitation, rest'}</span>`;
       const m = modById(kind); return `<a href="#/">${img(m.id)} ${L(m.title)}</a>`;
     };
@@ -985,10 +1050,12 @@
   }
 
   /* ---------- router & events ---------- */
+  const leaveHooks = []; /* games register clean-up (animation loops, timers) that runs when leaving the page */
   function route() {
     stopTimer(); stopVoice(); cancelAnimationFrame(ecgRAF);
+    leaveHooks.splice(0).forEach(fn => { try { fn(); } catch (e) { /* ignore */ } });
     const [, page, a, b] = (location.hash || '#/').split('/');
-    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
+    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', triage: 'practice', medpass: 'practice', vitals: 'practice', rain: 'practice', memory: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
     document.querySelectorAll('[data-nav]').forEach(x => x.classList.toggle('active', x.dataset.nav === tab));
     $('#app').classList.toggle('wide', tab !== 'learn' && tab !== 'me');
     (R[page] || R.learn)(a, b);
@@ -1006,7 +1073,8 @@
   });
 
   window.A = {
-    route, sel, check, flip, grade, startMock, simPick, simNext, speedGo, speedAns,
+    route, sel, check, flip, grade, startMock, flashPick,
+    flashMode: m => { S.flashMode = m; save(); R.flash(F ? F.id : 'all'); }, flashNext: () => R.flash(F ? F.id : 'all'), simPick, simNext, speedGo, speedAns,
     card: () => X && X.cards[X.i], /* read-only hook for automated tests */
     /* speaker buttons toggle: tap while reading = stop */
     readCard: () => document.body.classList.contains('speaking') ? stopVoice() : readCard(),
@@ -1057,6 +1125,10 @@
     syncNow: () => cloudPull(),
     signOut: async () => { await cloud.A_.signOut(cloud.auth); refreshCloudBox(); }
   };
+  /* games in js/games.js plug in here */
+  const LEV = { R, A: window.A, view, img, esc, shuffle, pick, t, L, L2, meaning, SFX, play, speak, stopVoice, segments, touch, stat, confetti, toast, mascot, countUp,
+    chips, uniqVocab, modById, save, state: () => S, onLeave: fn => leaveHooks.push(fn), UNIT_COLORS };
+  (window.LEV_EXT || []).forEach(ext => ext(LEV));
   route();
   cloudInit();
   idb.get(KEY).then(v => {

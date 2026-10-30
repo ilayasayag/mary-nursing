@@ -11,6 +11,9 @@ Content follows the official **September–December 2026** reading list (includi
 - **168 exam questions** (English + Spanish). Each answer shows its source on the reading list (textbook, AHA 2020, law or MOH circular). Law and circular claims were checked against the official texts.
 - **Simulation Ward**: 9 interactive patient cases with a live ECG/vitals monitor. Each choice is scored on safety, assessment, intervention, communication and documentation, followed by a debrief.
 - **Practice**: timed adaptive mock exam, Priority Rush (90 s of exam questions), Match Madness (drug→antidote, sign→condition, values, rules), fix-your-mistakes, Hebrew cards.
+- **Exam games**: Triage Rush (order 4 patients, animated debrief), Med Pass (give / hold / clarify from the order and chart, rules checked in Brunner & Suddarth), Vital Check (low / normal / high on an animated gauge).
+- **Hebrew games**: Word Rain (falling words, lives, combos), Memory Flip (3D card pairs), Hebrew cards with 4-option quiz mode.
+- **Visual lessons**: values become chips, gas formulas get subscripts, dense paragraphs become fact rows.
 - **Audio**: every Hebrew word is pre-recorded (`audio/he`); questions and answers are read aloud with the device voice, with Hebrew pronounced natively.
 - **My plan**: a day-by-day sprint to exam day. **The exam**: what is known about the simulation exam, plus simulation tips.
 - Lev, a heart-shaped nurse mascot (*lev* = heart in Hebrew), confetti, sound effects, light and dark mode, phone layout.
@@ -27,6 +30,7 @@ Then open http://localhost:8000. Opening `index.html` directly also works in Chr
 3. The site goes live at `https://<username>.github.io/<repo>/`.
 
 ## Add content
+- Game content: `js/data/games-data.js` (triage rounds, med-pass cards, normal ranges). Games: `js/games.js`.
 - Lesson questions: `js/data/lessonq.js` (keyed `module-lessonIndex`). Clinical match pairs: `js/data/pairs.js`.
 - Modules: `js/data/m-*.js`. A lesson is `{ t:[en,es], p:[[en,es]...], v:[[en,es,hebrew,translit]...] }`; a question is `[difficulty, correctIndex, qEn, qEs, optionsEn, optionsEs|0, whyEn, whyEs]`; inline Hebrew hint: `[[word|עברית|translit]]`.
 - Simulation cases: `js/data/sims.js` (each choice scores 2 best / 1 ok / 0 unhelpful / -1 unsafe).
