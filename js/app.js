@@ -14,7 +14,7 @@
   const UNIT_COLORS = ['#58cc02', '#1cb0f6', '#ce82ff', '#ff9600', '#ff4b4b', '#00cd9c', '#ff86d0', '#2b70c9', '#ffc800', '#7c5cff'];
 
   /* ---------- state ---------- */
-  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, doseOk: 0, daily: { d: '', xp: 0 }, sims: {}, planStart: '' };
+  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, daily: { d: '', xp: 0 }, sims: {}, planStart: '' };
   let S;
   try { S = Object.assign({}, def, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = Object.assign({}, def); }
   if (!S.planStart) S.planStart = today();
@@ -36,8 +36,8 @@
       simTitle: 'Simulation Ward', simIntro: 'Your exam is a virtual-reality patient-care simulation. Manage these patients step by step: safety, assessment, action, communication, documentation. The monitor reacts to your choices.',
       patient: 'Patient', yrs: 'yrs', skills: { safety: 'Safety', assess: 'Assessment', act: 'Intervention', comm: 'Communication', doc: 'Documentation' },
       debrief: 'Debrief', best: 'Best answer', yourPick: 'Your choice', again: 'Play again', backWard: 'Back to the ward', pts: 'pts',
-      flash: 'Flashcards', flashD: 'Spaced repetition. Your language on the front, Hebrew on the back.', match: 'Match Madness', matchD: 'Pair Hebrew words with their meaning against the clock.',
-      speed: 'Speed Round', speedD: '60 seconds. Combos give double points!', dose: 'Dosage Lab', doseD: 'Endless calculations with worked solutions.',
+      flash: 'Hebrew cards', flashD: 'Medical Hebrew with spaced repetition: your language on the front, Hebrew on the back.', match: 'Match Madness', matchD: 'Match drugs to antidotes, signs to conditions, normal values and rules. Against the clock.',
+      speed: 'Priority Rush', speedD: '90 seconds of exam questions. Streaks give double points!', source: 'Source', hebMoment: 'Hebrew moment',
       mock: 'Mock exam', mockD: 'Timed, forward-only, adaptive. No feedback until the end, like a real exam.', review: 'Fix mistakes', reviewD: 'Retry every question you got wrong.',
       noWrong: 'No mistakes to fix. Amazing!', deck: 'Deck', all: 'All units', mastered: 'mastered', reveal: 'Tap to flip', know: 'Got it', notyet: 'Again',
       answer: 'Your answer', steps: 'Solution', length: 'Length', questions: 'questions', byTopic: 'By topic', score: 'Score', play: 'Play', record: 'Record',
@@ -64,8 +64,8 @@
       simTitle: 'Sala de simulación', simIntro: 'Tu examen es una simulación de cuidado del paciente en realidad virtual. Gestiona estos pacientes paso a paso: seguridad, valoración, intervención, comunicación y documentación. El monitor reacciona a tus decisiones.',
       patient: 'Paciente', yrs: 'años', skills: { safety: 'Seguridad', assess: 'Valoración', act: 'Intervención', comm: 'Comunicación', doc: 'Documentación' },
       debrief: 'Análisis', best: 'Mejor respuesta', yourPick: 'Tu elección', again: 'Jugar otra vez', backWard: 'Volver a la sala', pts: 'pts',
-      flash: 'Tarjetas', flashD: 'Repetición espaciada. Tu idioma delante, hebreo detrás.', match: 'Parejas locas', matchD: 'Une palabras hebreas con su significado contra reloj.',
-      speed: 'Ronda rápida', speedD: '60 segundos. ¡Los combos dan doble puntuación!', dose: 'Laboratorio de dosis', doseD: 'Cálculos sin fin con solución paso a paso.',
+      flash: 'Tarjetas de hebreo', flashD: 'Hebreo médico con repetición espaciada: tu idioma delante, hebreo detrás.', match: 'Parejas locas', matchD: 'Une fármacos con antídotos, signos con enfermedades, valores normales y normas. Contra reloj.',
+      speed: 'Carrera de prioridades', speedD: '90 segundos de preguntas de examen. ¡Las rachas dan doble puntuación!', source: 'Fuente', hebMoment: 'Momento de hebreo',
       mock: 'Simulacro', mockD: 'Con tiempo, sin volver atrás, adaptativo. Sin correcciones hasta el final, como un examen real.', review: 'Corregir errores', reviewD: 'Repite las preguntas que fallaste.',
       noWrong: 'No hay errores que corregir. ¡Increíble!', deck: 'Mazo', all: 'Todas las unidades', mastered: 'dominadas', reveal: 'Toca para girar', know: 'La sé', notyet: 'Otra vez',
       answer: 'Tu respuesta', steps: 'Solución', length: 'Longitud', questions: 'preguntas', byTopic: 'Por tema', score: 'Puntuación', play: 'Jugar', record: 'Récord',
@@ -219,7 +219,7 @@
     ['simAll', 'crown', 'Every ward case', 'Todos los casos', () => Object.keys(S.sims).length >= NX.sims.length],
     ['q100', 'hundred', '100 answers', '100 respuestas', () => S.answered >= 100],
     ['streak7', 'fire', '7-day streak', '7 días seguidos', () => S.streak >= 7],
-    ['dose10', 'dose', '10 doses right', '10 dosis bien', () => S.doseOk >= 10],
+    ['rush15', 'speed', 'Priority Rush 15+', 'Carrera de prioridades 15+', () => (S.best.speed || 0) >= 15],
     ['heb50', 'heb', '50 Hebrew words', '50 palabras', () => Object.values(S.box).filter(b => b >= 4).length >= 50],
     ['mock', 'trophy', 'Mock exam done', 'Simulacro hecho', () => !!S.best.mock]
   ];
@@ -313,34 +313,14 @@
     if (mode === 'mean') return { ...base, title: `${t('meanHeb')} “${esc(meaning(v))}”?`, q: '', o: opts.map(x => heChip(x)), tiles: true };
     return { ...base, title: alpha ? t('letterQ') : t('whatMeans'), q: `<button class="he-prompt" data-say="${v.he}"><span class="he" lang="he" dir="rtl">${v.he}</span>${S.hints && !alpha ? `<i>${esc(v.tr)}</i>` : ''}</button>`, o: opts.map(x => esc(meaning(x))) };
   }
-  const staticMCQ = q => ({ type: 'mcq', id: q.id, m: q.m, d: q.d, a: q.a, title: '', q: `<p class="qtext">${esc(L(q.q))}</p>`, o: q.o.map(o => esc(L(o))), w: esc(L(q.w)) });
-
-  const r1 = x => Math.round(x * 10) / 10;
-  const DOSE = [
-    () => { const s = pick([5, 10, 25, 50, 100, 125, 250, 500]), n = pick([.5, 1, 1.5, 2, 3]), o = s * n;
-      return { q: [`Order: ${o} mg PO. Available: ${s} mg tablets. How many tablets?`, `Orden: ${o} mg VO. Disponible: comprimidos de ${s} mg. ¿Cuántos comprimidos?`], ans: n, unit: 'tab', tol: 0, steps: `${o} ÷ ${s} = ${n}` }; },
-    () => { const [c, v] = pick([[125, 5], [250, 5], [100, 5], [200, 5], [40, 1], [10, 1]]), ml = pick([2, 2.5, 4, 5, 7.5, 10, 12.5, 15]), o = r1(ml * c / v);
-      return { q: [`Order: ${o} mg. Syrup contains ${c} mg/${v} mL. How many mL?`, `Orden: ${o} mg. El jarabe contiene ${c} mg/${v} mL. ¿Cuántos mL?`], ans: ml, unit: 'mL', tol: .05, steps: `(${o} ÷ ${c}) × ${v} = ${ml} mL` }; },
-    () => { const d = pick([30, 40, 50, 60, 80, 100]), w = 6 + (Math.random() * 30 | 0), n = pick([2, 3, 4]), h = 24 / n, a = r1(d * w / n);
-      return { q: [`Child ${w} kg. Order: ${d} mg/kg/day divided every ${h} h. How many mg per dose?`, `Niño de ${w} kg. Orden: ${d} mg/kg/día cada ${h} h. ¿Cuántos mg por toma?`], ans: a, unit: 'mg', tol: .1, steps: `${d} × ${w} = ${d * w} mg ÷ ${n} = ${a} mg` }; },
-    () => { const v = pick([250, 500, 1000, 1500]), h = pick([2, 4, 5, 6, 8, 10, 12]), a = r1(v / h);
-      return { q: [`Infuse ${v} mL over ${h} h with a pump. Rate in mL/h?`, `Infundir ${v} mL en ${h} h con bomba. ¿Velocidad en mL/h?`], ans: a, unit: 'mL/h', tol: .5, steps: `${v} ÷ ${h} = ${a} mL/h` }; },
-    () => { const v = pick([100, 250, 500, 1000]), h = pick([1, 2, 4, 8]), df = pick([10, 15, 20, 60]), a = Math.round(v * df / (h * 60));
-      return { q: [`Infuse ${v} mL over ${h} h. Drop factor ${df} gtt/mL. Drops per minute?`, `Infundir ${v} mL en ${h} h. Factor de goteo ${df} gtt/mL. ¿Gotas por minuto?`], ans: a, unit: 'gtt/min', tol: 1, steps: `(${v} × ${df}) ÷ ${h * 60} min = ${r1(v * df / (h * 60))} ≈ ${a}` }; },
-    () => { const lb = 22 + (Math.random() * 200 | 0), a = r1(lb / 2.2);
-      return { q: [`A patient weighs ${lb} lb. Weight in kg?`, `Un paciente pesa ${lb} lb. ¿Peso en kg?`], ans: a, unit: 'kg', tol: .2, steps: `${lb} ÷ 2.2 = ${a} kg` }; },
-    () => { const d = pick([2, 3, 5, 10]), w = pick([50, 60, 70, 80, 90, 100]), c = pick([800, 1600]), a = r1(d * w * 60 / c);
-      return { q: [`Infusion ${d} mcg/kg/min, patient ${w} kg, concentration ${c} mcg/mL. Rate in mL/h?`, `Infusión ${d} mcg/kg/min, paciente de ${w} kg, concentración ${c} mcg/mL. ¿mL/h?`], ans: a, unit: 'mL/h', tol: .2, steps: `${d} × ${w} × 60 = ${d * w * 60} mcg/h ÷ ${c} = ${a} mL/h` }; },
-    () => { const mg = pick([0.125, 0.25, 0.5, 0.05, 1.5, 0.4]), a = r1(mg * 1000);
-      return { q: [`Convert ${mg} mg to micrograms (mcg).`, `Convierte ${mg} mg a microgramos (mcg).`], ans: a, unit: 'mcg', tol: 0, steps: `${mg} × 1000 = ${a} mcg` }; }
-  ];
-  const doseProblem = () => pick(DOSE)();
-  function doseMCQ() {
-    const p = doseProblem(), a = p.ans;
-    const cand = shuffle([...new Set([r1(a * 2), r1(a / 2), r1(a * 10), r1(a + (a >= 10 ? 5 : 1)), r1(a / 10), r1(a * 1.5)].filter(x => x > 0 && x !== a))]).slice(0, 3);
-    const opts = shuffle([a, ...cand]);
-    return { type: 'mcq', m: 'calc', d: 2, a: opts.indexOf(a), title: '', q: `<p class="qtext">${esc(L2(p.q))}</p>`, o: opts.map(x => `${x} ${p.unit}`), w: esc(p.steps) };
-  }
+  /* where each module's questions come from on Mary's Sept–Dec 2026 reading list */
+  const SOURCE = {
+    fund: 'Kozier & Erb’s Fundamentals of Nursing, 11th ed.', medsurg: 'Brunner & Suddarth’s Medical-Surgical Nursing, 16th ed.',
+    pharm: 'Nursing 2025-2026 Drug Handbook', peds: 'Wong’s Nursing Care of Infants and Children, 12th ed.',
+    mat: 'Olds’ Maternal-Newborn Nursing, 12th ed.', psych: 'Townsend, Psychiatric Mental Health Nursing, 10th ed.',
+    emerg: 'AHA 2020: Adult BLS and First Aid guidelines', law: 'Israeli laws and Ministry of Health circulars'
+  };
+  const staticMCQ = q => ({ type: 'mcq', id: q.id, m: q.m, d: q.d, a: q.a, title: '', q: `<p class="qtext">${esc(L(q.q))}</p>`, o: q.o.map(o => esc(L(o))), w: esc(L(q.w)), src: SOURCE[q.m] });
 
   /* ---------- SESSION engine (Duolingo-style overlay) ---------- */
   let X = null;
@@ -370,7 +350,7 @@
       body = `<div class="teach">${mascot('happy', 'talk')}<div class="speech pop">${c.html}</div></div>`;
       foot = `<button class="btn green wide" onclick="A.cont()">${t('continue')}</button>`;
     } else if (c.type === 'word') {
-      body = `<h2 class="ctitle">${img('sparkles')} ${t('newWord')}</h2><button class="word-card pop" data-say="${c.v.he}">
+      body = `<h2 class="ctitle">${img(c.moment ? 'heb' : 'sparkles')} ${c.moment ? t('hebMoment') : t('newWord')}</h2><button class="word-card pop" data-say="${c.v.he}">
         <span class="he" lang="he" dir="rtl">${c.v.he}</span><i>${esc(c.v.tr)}</i><b>${esc(meaning(c.v))}</b>${img('speaker', 'spk')}</button>`;
       foot = `<button class="btn green wide" onclick="A.cont()">${t('continue')}</button>`;
     } else if (c.type === 'pairs') {
@@ -429,7 +409,7 @@
     else if (S.autoRead && !ok) setTimeout(() => readParts([t('wrongT'), htmlText(c.o[c.a])]), 450);
     $('#foot').className = `sess-foot ${ok ? 'good' : 'bad'}`;
     $('#foot').innerHTML = `<div class="foot-in fb"><div class="fb-txt">${ok ? `<h3>${img('check')} ${pick(t('correct'))}</h3>` : `<h3>${t('wrongT')}</h3><p class="ans">${c.o[c.a]}</p>`}
-      ${c.w ? `<p class="why">${c.w}</p>` : ''}</div><button class="readbtn" onclick="A.readFb()" aria-label="${t('readAloud')}">${img('speaker')}</button><button class="btn ${ok ? 'green' : 'red'}" onclick="A.cont()">${t('continue')}</button></div>`;
+      ${c.w ? `<p class="why">${c.w}</p>` : ''}${c.src ? `<p class="src">📚 ${t('source')}: ${c.src}</p>` : ''}</div><button class="readbtn" onclick="A.readFb()" aria-label="${t('readAloud')}">${img('speaker')}</button><button class="btn ${ok ? 'green' : 'red'}" onclick="A.cont()">${t('continue')}</button></div>`;
     touch(ok ? 2 : 0);
   }
   function advance() {
@@ -468,22 +448,31 @@
   /* lesson & quiz sessions */
   R.lesson = (id, i) => {
     const m = modById(id); i = +i; const l = m && m.lessons[i]; if (!l) return R.learn();
-    const cards = l.p.map(p => ({ type: 'teach', html: hint(esc(L(p))) }));
-    const words = l.alpha ? shuffle(l.v).slice(0, 6) : l.v.slice(0, 5);
-    words.forEach(v => cards.push({ type: 'word', v }));
-    if (l.v.length >= 4) cards.push({ type: 'pairs', items: shuffle(words.length >= 4 ? words : l.v).slice(0, 4) });
-    if (words.length) { cards.push(vocabMCQ(l.v, pick(words))); cards.push(vocabMCQ(l.v, pick(words), l.alpha ? 'he' : hasHebrewVoice() ? 'listen' : 'mean')); }
-    const mq = NX.qs.filter(q => q.m === id);
-    if (mq.length) [0, 1].forEach(k => cards.push(staticMCQ(mq[(i * 2 + k) % mq.length])));
+    const teach = l.p.map(p => ({ type: 'teach', html: hint(esc(L(p))) }));
+    let cards = [];
+    if (id === 'heb') {
+      /* the Hebrew unit itself: words, pairs and listening */
+      const words = l.v.slice(0, 5);
+      cards = teach.concat(words.map(v => ({ type: 'word', v })));
+      if (l.v.length >= 4) cards.push({ type: 'pairs', items: shuffle(words).slice(0, 4) });
+      cards.push(vocabMCQ(l.v, pick(words)), vocabMCQ(l.v, pick(words), 'listen'));
+    } else {
+      /* exam first: teaching interleaved with this lesson's clinical questions, then a short Hebrew moment */
+      const lq = shuffle(NX.qs.filter(q => q.m === id && q.l === i)).map(staticMCQ);
+      teach.forEach((c, k) => { cards.push(c); if (k >= 1 && lq.length) cards.push(lq.shift()); });
+      cards.push(...lq);
+      const words = l.v.slice(0, 2);
+      words.forEach(v => cards.push({ type: 'word', v, moment: true }));
+      if (words.length) cards.push(vocabMCQ(l.v, pick(words), 'listen'));
+    }
     R.learn();
     session(cards, { back: '#/', xpBase: 15, onEnd: () => { S.done[nodeKey(id, i)] = 1; } });
   };
-  const hasHebrewVoice = () => { try { return speechSynthesis.getVoices().some(v => /^he/i.test(v.lang)); } catch (e) { return false; } };
   R.quiz = id => {
     const m = modById(id); if (!m) return R.learn();
     const pool = NX.vocab.filter(v => v.m === id);
-    let cards = NX.qs.filter(q => q.m === id).map(staticMCQ).concat(shuffle(pool).slice(0, id === 'heb' ? 8 : 3).map(v => vocabMCQ(pool, v)));
-    if (id === 'calc') cards = cards.concat(Array.from({ length: 4 }, doseMCQ));
+    const exam = shuffle(NX.qs.filter(q => q.m === id)).slice(0, 10).map(staticMCQ);
+    const cards = exam.concat(shuffle(pool).slice(0, id === 'heb' ? 8 : 2).map(v => vocabMCQ(pool, v)));
     R.learn();
     session(shuffle(cards), { back: '#/', xpBase: 25, doneTitle: t('quizDone'), onEnd: acc => { if (acc >= 60) S.done[nodeKey(id, 'q')] = 1; } });
   };
@@ -501,10 +490,10 @@
       const c = mockPool.filter(q => Math.abs(q.d - X.level) === gap);
       if (c.length) { const q = pick(c); mockPool.splice(mockPool.indexOf(q), 1); return q; }
     }
-    return doseMCQ();
+    return staticMCQ(pick(NX.qs.filter(q => q.m !== 'heb')));
   }
   function startMock(n) {
-    mockPool = NX.qs.filter(q => q.m !== 'heb').map(staticMCQ).concat(Array.from({ length: 8 }, doseMCQ));
+    mockPool = NX.qs.filter(q => q.m !== 'heb').map(staticMCQ);
     session(new Array(n).fill(null), { back: '#/practice', hasHearts: false, retry: false, silent: true, adaptive: pickAdaptive, level: 2, deadline: Date.now() + n * 1.65 * 60000, byTopic: true, xpBase: 30, doneTitle: t('mock'),
       onEnd: acc => { S.best.mock = Math.max(S.best.mock || 0, acc); } });
   }
@@ -614,16 +603,16 @@
 
   /* ---------- PRACTICE hub & games ---------- */
   R.practice = () => {
-    const games = [['flash', 'flash', '#/flash/all', ''], ['match', 'match', '#/match/all', ''], ['speed', 'speed', '#/speed/all', S.best.speed ? `${t('record')}: ${S.best.speed}` : ''],
-      ['dose', 'dose', '#/dose', `✓ ${S.doseOk}`], ['mock', 'mock', '#/mock', S.best.mock ? `${t('record')}: ${S.best.mock}%` : ''], ['review', 'review', '#/review', `${S.wrong.length}`]];
+    const games = [['mock', 'mock', '#/mock', S.best.mock ? `${t('record')}: ${S.best.mock}%` : ''], ['speed', 'speed', '#/speed', S.best.speed ? `${t('record')}: ${S.best.speed}` : ''],
+      ['match', 'match', '#/match', ''], ['review', 'review', '#/review', `${S.wrong.length}`], ['flash', 'flash', '#/flash/all', '']];
     view(`<section class="page-head">${img('target', 'head-img float')}<div><h1>${t('practice')}</h1></div></section>
       <div class="game-grid">${games.map(([k, im, h, sub], i) => `<a class="card game tilt" href="${h}" style="--d:${i * 60}ms;--g:${UNIT_COLORS[i]}">
         ${img(im, 'wiggle')}<h3>${t(k)}</h3><p>${t(k + 'D')}</p>${sub ? `<span class="chip">${sub}</span>` : ''}</a>`).join('')}</div>`);
   };
   R.mock = () => {
-    const total = NX.qs.filter(q => q.m !== 'heb').length + 8;
+    const total = NX.qs.filter(q => q.m !== 'heb').length;
     view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><section class="card center-card">${img('mock', 'head-img float')}<h1>${t('mock')}</h1><p>${t('mockD')}</p>
-      <h3>${t('length')}</h3><div class="row">${[15, 30, total].map((n, i) => `<button class="btn ${i === 1 ? 'green' : 'blue'}" onclick="A.startMock(${n})">${n} ${t('questions')} · ${Math.round(n * 1.65)}′</button>`).join('')}</div></section>`);
+      <h3>${t('length')}</h3><div class="row">${[20, 50, total].map((n, i) => `<button class="btn ${i === 1 ? 'green' : 'blue'}" onclick="A.startMock(${n})">${n} ${t('questions')} · ${Math.round(n * 1.65)}′</button>`).join('')}</div></section>`);
   };
 
   let F = null;
@@ -644,13 +633,14 @@
   function grade(ok) { S.box[F.v.id] = ok ? Math.min(5, (S.box[F.v.id] || 0) + 1) : 1; ok ? SFX.ok() : SFX.tap(); touch(ok ? 3 : 1); R.flash(F.id); }
 
   let M = null;
-  R.match = id => {
-    id = id || 'all'; const pool = deckPool(id).filter(v => !v.alpha || id === 'heb');
-    const set = []; for (const v of shuffle(pool)) { if (!set.some(x => x.he === v.he || meaning(x) === meaning(v))) set.push(v); if (set.length === 6) break; }
-    M = { id, set, sel: null, done: 0, start: Date.now(), miss: 0 };
-    view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><div class="game-top"><h1>${img('match')} ${t('match')}</h1>${deckPicker('match', id)}<span class="clock big" id="mt">0s</span></div>
-      <div class="pairs big"><div>${shuffle(set).map(v => `<button class="ptile he" lang="he" dir="rtl" data-id="${v.id}" data-s="L" data-say="${v.he}">${v.he}${S.hints ? `<small>${esc(v.tr)}</small>` : ''}</button>`).join('')}</div>
-      <div>${shuffle(set).map(v => `<button class="ptile" data-id="${v.id}" data-s="R">${esc(meaning(v))}</button>`).join('')}</div></div>`);
+  /* Match Madness: clinical pairs (drug → antidote, sign → condition, values, rules), with a Hebrew hint where there is one */
+  R.match = () => {
+    const set = shuffle(NX.pairs).slice(0, 5).map((p, i) => ({ id: 'p' + i, left: L2([p[0], p[1]]), right: L2([p[2], p[3]]), he: p[4] }));
+    M = { set, sel: null, done: 0, start: Date.now(), miss: 0 };
+    view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><div class="game-top"><h1>${img('match')} ${t('match')}</h1><span class="clock big" id="mt">0s</span></div>
+      <p class="muted">${t('matchD')}</p>
+      <div class="pairs big clinical"><div>${shuffle(set).map(p => `<button class="ptile" data-id="${p.id}" data-s="L"${p.he ? ` data-say="${p.he}"` : ''}>${esc(p.left)}${p.he && S.hints ? `<small class="he" lang="he" dir="rtl">${p.he}</small>` : ''}</button>`).join('')}</div>
+      <div>${shuffle(set).map(p => `<button class="ptile" data-id="${p.id}" data-s="R">${esc(p.right)}</button>`).join('')}</div></div>`);
     X = null; stopTimer(); timer = setInterval(() => { const el = $('#mt'); if (!el) return stopTimer(); el.textContent = `${Math.round((Date.now() - M.start) / 1000)}s`; }, 500);
   };
   /* shared pair-tile logic for the Match game and in-lesson pairs */
@@ -664,21 +654,23 @@
       const total = P.total || P.set.length;
       if (P.done === total) {
         if (X && X.pair) { $('#ctn').disabled = false; X.pair = null; X.ok++; X.n++; }
-        else { stopTimer(); const s = Math.round((Date.now() - M.start) / 1000); touch(20); confetti(); SFX.win(); toast(`${s}s · ${M.miss} ✗ · +20 XP`, 'match'); setTimeout(() => R.match(M.id), 1600); }
+        else { stopTimer(); const s = Math.round((Date.now() - M.start) / 1000); touch(20); confetti(); SFX.win(); toast(`${s}s · ${M.miss} ✗ · +20 XP`, 'match'); setTimeout(() => R.match(), 1600); }
       }
     } else { if (M && !X) M.miss++; SFX.no(); [a, b].forEach(x => { x.classList.add('shake'); setTimeout(() => x.classList.remove('shake'), 450); }); }
   }
 
+  /* Priority Rush: 90 seconds of exam questions; a wrong answer shows the right one before moving on */
+  const RUSH_MS = 90000;
   let SP = null;
-  R.speed = id => {
-    id = id || 'all'; SP = { id, pool: deckPool(id), score: 0, combo: 0, end: 0 };
-    view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><section class="card center-card">${img('speed', 'head-img float')}<h1>${t('speed')}</h1>${deckPicker('speed', id)}<p>${t('speedD')}</p>
+  R.speed = () => {
+    SP = { pool: NX.qs.filter(q => q.m !== 'heb'), score: 0, combo: 0, end: 0 };
+    view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><section class="card center-card">${img('speed', 'head-img float')}<h1>${t('speed')}</h1><p>${t('speedD')}</p>
       ${S.best.speed ? `<p class="chip">${t('record')}: ${S.best.speed}</p>` : ''}<button class="btn green big" onclick="A.speedGo()">${t('play')} ▶</button></section>`);
   };
-  function speedGo() { SP.end = Date.now() + 60000; SP.score = 0; SP.combo = 0; stopTimer(); timer = setInterval(speedTick, 200); speedQ(); }
+  function speedGo() { SP.end = Date.now() + RUSH_MS; SP.score = 0; SP.combo = 0; stopTimer(); stopVoice(); timer = setInterval(speedTick, 200); speedQ(); }
   function speedTick() {
     const left = Math.max(0, SP.end - Date.now()), el = $('#sclk'), bar = $('#sbar');
-    if (el) el.textContent = Math.ceil(left / 1000); if (bar) bar.style.width = `${left / 600}%`;
+    if (el) el.textContent = Math.ceil(left / 1000); if (bar) bar.style.width = `${100 * left / RUSH_MS}%`;
     if (!left) {
       stopTimer(); const best = S.best.speed || 0, rec = SP.score > best; if (rec) S.best.speed = SP.score; touch(SP.score * 2); SFX.win(); if (rec) confetti();
       view(`<section class="card center-card">${mascot('happy', 'big jump')}<h1 class="pop">${SP.score}</h1><p>${rec ? '🏆 ' + t('record') + '!' : t('record') + ': ' + best}</p>
@@ -686,38 +678,25 @@
     }
   }
   function speedQ() {
-    SP.q = vocabMCQ(SP.pool, pick(SP.pool), pick(['he', 'mean']));
-    view(`<div class="speed-top"><b class="clock big" id="sclk">60</b><div class="pbar"><i id="sbar"></i></div><span class="score">⭐ ${SP.score}</span>${SP.combo > 2 ? `<span class="combo pop">🔥×${SP.combo}</span>` : ''}</div>
-      <section class="card speed-card pop"><h2 class="ctitle">${SP.q.title}</h2>${SP.q.q}<div class="choices ${SP.q.tiles ? 'tiles' : ''}">${SP.q.o.map((o, k) => `<button class="choice" onclick="A.speedAns(${k},this)"><span>${o}</span></button>`).join('')}</div></section>`);
+    const q = pick(SP.pool); SP.q = staticMCQ(q);
+    view(`<div class="speed-top"><b class="clock big" id="sclk">${RUSH_MS / 1000}</b><div class="pbar"><i id="sbar"></i></div><span class="score">⭐ ${SP.score}</span>${SP.combo > 2 ? `<span class="combo pop">🔥×${SP.combo}</span>` : ''}</div>
+      <section class="card speed-card pop">${img(q.m, 'rush-img')}${SP.q.q}<div class="choices">${SP.q.o.map((o, k) => `<button class="choice" onclick="A.speedAns(${k},this)"><kbd>${k + 1}</kbd><span>${o}</span></button>`).join('')}</div></section>`);
     speedTick();
   }
   function speedAns(k, b) {
+    if (SP.lock) return; SP.lock = true;
     const ok = k === SP.q.a; b.classList.add(ok ? 'right' : 'bad');
+    if (!ok) document.querySelectorAll('.speed-card .choice')[SP.q.a].classList.add('right');
     if (ok) { SP.combo++; SP.score += SP.combo > 4 ? 2 : 1; SFX.ok(); } else { SP.combo = 0; SFX.no(); }
-    setTimeout(() => { if (SP.end > Date.now()) speedQ(); }, ok ? 220 : 650);
-  }
-
-  let D = null;
-  R.dose = () => {
-    D = doseProblem();
-    view(`<a class="crumb" href="#/practice">← ${t('practice')}</a><div class="game-top"><h1>${img('dose')} ${t('dose')}</h1><span class="chip">✓ ${S.doseOk}</span></div>
-      <section class="card dose-card pop"><p class="qtext">${esc(L2(D.q))}</p>
-      <form onsubmit="A.doseCheck();return false" class="doseform"><input id="dv" inputmode="decimal" autocomplete="off" required placeholder="?"><span class="unit">${D.unit}</span>
-      <button class="btn green">${t('check')}</button></form><div id="dfb"></div></section>`);
-    $('#dv').focus();
-  };
-  function doseCheck() {
-    const v = parseFloat($('#dv').value.replace(',', '.')), ok = Math.abs(v - D.ans) <= D.tol + 1e-9;
-    if (ok) { S.doseOk++; SFX.ok(); } else SFX.no(); stat('calc', ok); touch(ok ? 12 : 2);
-    $('#dfb').innerHTML = `<div class="simfb ${ok ? 'good' : 'bad'} pop"><b>${ok ? pick(t('correct')) : `${t('wrongT')} ${D.ans} ${D.unit}`}</b><p><small>${t('steps')}:</small> ${esc(D.steps)}</p>
-      <button class="btn ${ok ? 'green' : 'red'}" onclick="A.route()">${t('next')} →</button></div>`;
+    stat(SP.q.m, ok);
+    setTimeout(() => { SP.lock = false; if (SP.end > Date.now()) speedQ(); }, ok ? 450 : 1600);
   }
 
   /* ---------- PLAN: day-by-day sprint to 18.11 ---------- */
   /* aligned to the END: the last entry is always the day before the exam */
   const SPRINT = [
-    ['sim', 'mi', 'fund'], ['sim', 'hypo', 'medsurg'], ['sim', 'ana', 'pharm'], ['sim', 'bleed', 'medsurg'], ['sim', 'copd', 'calc'], ['sim', 'stroke', 'emerg'],
-    ['sim', 'pph', 'mat'], ['sim', 'child', 'peds'], ['sim', 'psy', 'psych'], ['law'], ['heb', 'review'], ['mock'], ['simall', 'calc'], ['law', 'review'],
+    ['sim', 'mi', 'fund'], ['sim', 'hypo', 'medsurg'], ['sim', 'ana', 'pharm'], ['sim', 'bleed', 'medsurg'], ['sim', 'copd', 'law'], ['sim', 'stroke', 'emerg'],
+    ['sim', 'pph', 'mat'], ['sim', 'child', 'peds'], ['sim', 'psy', 'psych'], ['law', 'rush'], ['match', 'review'], ['mock'], ['simall', 'rush'], ['law', 'review'],
     ['simall', 'fund'], ['mock', 'review'], ['simall', 'emerg'], ['simall'], ['rest']
   ];
   R.plan = () => {
@@ -730,6 +709,8 @@
       if (kind === 'simall') return `<a href="#/sim">${img('sim')} ${t('simTitle')} ×3</a>`;
       if (kind === 'mock') return `<a href="#/mock">${img('mock')} ${t('mock')}</a>`;
       if (kind === 'review') return `<a href="#/review">${img('review')} ${t('review')}</a>`;
+      if (kind === 'rush') return `<a href="#/speed">${img('speed')} ${t('speed')}</a>`;
+      if (kind === 'match') return `<a href="#/match">${img('match')} ${t('match')}</a>`;
       if (kind === 'rest') return `<span>${img('heart')} ${S.lang === 'es' ? 'Repaso suave, revisa la invitación, descansa' : 'Light review, check your invitation, rest'}</span>`;
       const m = modById(kind); return `<a href="#/">${img(m.id)} ${L(m.title)}</a>`;
     };
@@ -774,7 +755,7 @@
   function route() {
     stopTimer(); stopVoice(); cancelAnimationFrame(ecgRAF);
     const [, page, a, b] = (location.hash || '#/').split('/');
-    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', dose: 'practice', mock: 'practice', review: 'practice', plan: 'plan', exam: 'exam', me: 'me' }[page || ''] || 'learn';
+    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', plan: 'plan', exam: 'exam', me: 'me' }[page || ''] || 'learn';
     document.querySelectorAll('[data-nav]').forEach(x => x.classList.toggle('active', x.dataset.nav === tab));
     $('#app').classList.toggle('wide', tab !== 'learn' && tab !== 'me');
     (R[page] || R.learn)(a, b);
@@ -792,7 +773,7 @@
   });
 
   window.A = {
-    route, sel, check, flip, grade, startMock, simPick, simNext, speedGo, speedAns, doseCheck,
+    route, sel, check, flip, grade, startMock, simPick, simNext, speedGo, speedAns,
     card: () => X && X.cards[X.i], /* read-only hook for automated tests */
     readCard, readStep, readFb: () => readEl($('.fb-txt')),
     toggleAuto: b => { S.autoRead = !S.autoRead; save(); document.querySelectorAll('.autochip').forEach(x => { x.classList.toggle('on', S.autoRead); x.setAttribute('aria-pressed', S.autoRead); }); if (!S.autoRead) stopVoice(); else (X ? readCard : readStep)(); },
@@ -809,7 +790,7 @@
     quitAsk: () => { if (X.i === 0 || confirm(t('quitQ'))) closeSession(X.back || '#/'); },
     closeTo: h => closeSession(h),
     retrySession: () => { const o = X; session(o.cards.filter(c => !c.retried), { back: o.back, xpBase: o.xpBase, onEnd: o.onEnd, doneTitle: o.doneTitle }); },
-    speedRestart: () => R.speed(SP.id),
+    speedRestart: () => R.speed(),
     planTick: (k, v) => { S.plan[k] = v; if (v) { SFX.win(); confetti(); } touch(v ? 25 : 0); R.plan(); },
     setName: v => { S.name = v.trim() || 'Mary'; save(); route(); },
     setLang: l => { S.lang = l; save(); route(); },

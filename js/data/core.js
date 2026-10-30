@@ -29,5 +29,17 @@ window.NX = {
       });
     });
     NX.modules.push(mod);
+  },
+  /* lesson-tied questions: { 'module-lessonIndex': [question rows] } */
+  addLessonQ(map) {
+    Object.entries(map).forEach(([key, rows]) => {
+      const [m, l] = key.split('-');
+      rows.forEach((r, i) => NX.qs.push({
+        id: `${m}L${l}_${i}`, m, l: +l, d: r[0], a: r[1],
+        q: { en: r[2], es: r[3] },
+        o: r[4].map((e, k) => ({ en: e, es: r[5] ? r[5][k] : e })),
+        w: { en: r[6], es: r[7] }
+      }));
+    });
   }
 };

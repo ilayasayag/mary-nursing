@@ -86,7 +86,7 @@ NX.sims = [
             [1, 'Give an antihistamine', 'Dar un antihistamínico', 'Not first-line and you have not stopped the drug.', 'No es primera línea y no has parado el fármaco.']] },
       { k: 'act', v: { hr: 128, bp: '80/46', spo2: 90, rr: 28, t: 36.9 },
         s: ['He is wheezing, BP 80/46. Which drug, how?', 'Tiene sibilancias, PA 80/46. ¿Qué fármaco y cómo?'],
-        c: [[2, 'Epinephrine 1 mg/mL, 0.5 mg IM into the mid-outer thigh', 'Adrenalina 1 mg/mL, 0,5 mg IM en la cara anterolateral del muslo', 'IM epinephrine is first-line; circular 204/2023 sets the RN role.', 'La adrenalina IM es de primera línea; la circular 204/2023 define el rol de la enfermera.'],
+        c: [[2, 'Epinephrine 1 mg/mL, 0.3 mg IM into the front of the thigh', 'Adrenalina 1 mg/mL, 0,3 mg IM en la cara anterior del muslo', 'Circular 204/2023: adult starting dose 0.3 mg IM; further doses every 3-5 min by physician order.', 'Circular 204/2023: dosis inicial adulta 0,3 mg IM; dosis adicionales cada 3-5 min por orden médica.'],
             [-1, 'Epinephrine 1 mg IV push', 'Adrenalina 1 mg IV en bolo', 'IV bolus epinephrine at that dose is for cardiac arrest and can cause arrhythmia.', 'La adrenalina IV en bolo a esa dosis es para parada y puede causar arritmias.'],
             [1, 'Hydrocortisone IV', 'Hidrocortisona IV', 'Steroids act slowly; they are add-ons after epinephrine.', 'Los corticoides actúan lento; se añaden tras la adrenalina.'],
             [0, 'Salbutamol inhaler only', 'Solo salbutamol inhalado', 'Treats wheeze, not shock.', 'Trata las sibilancias, no el shock.']] },
@@ -140,7 +140,7 @@ NX.sims = [
     steps: [
       { k: 'act', v: { hr: 112, bp: '150/84', spo2: 84, rr: 30, t: 37.6 },
         s: ['SpO2 84%, RR 30. First nursing action?', 'SpO2 84%, FR 30. ¿Primera acción de enfermería?'],
-        c: [[2, 'Sit him upright (high Fowler/tripod), start controlled oxygen aiming for 88-92%', 'Incorporarlo (Fowler alto/trípode) e iniciar oxígeno controlado con objetivo 88-92%', 'Position and controlled oxygen; circular 127/2017 lets the RN start low-flow oxygen.', 'Postura y oxígeno controlado; la circular 127/2017 permite a la enfermera iniciar oxígeno de bajo flujo.'],
+        c: [[2, 'Sit him upright (high Fowler/tripod) and call the physician for an oxygen order aiming for 88-92%', 'Incorporarlo (Fowler alto/trípode) y pedir al médico una orden de oxígeno con objetivo 88-92%', 'Known chronic lung disease is an exception in circular 127/2017: the RN does not decide on oxygen alone here.', 'La enfermedad pulmonar crónica conocida es una excepción de la circular 127/2017: aquí la enfermera no decide sola el oxígeno.'],
             [1, 'Non-rebreather mask at 15 L/min', 'Mascarilla con reservorio a 15 L/min', 'Corrects hypoxia but risks CO2 retention; titrate to target.', 'Corrige la hipoxia pero arriesga retención de CO2; ajustar al objetivo.'],
             [-1, 'Lay him flat to rest', 'Tumbarlo para que descanse', 'Lying flat worsens breathing.', 'Tumbado respira peor.'],
             [0, 'Give a sedative to calm his breathing', 'Dar un sedante para calmar la respiración', 'Sedatives depress breathing.', 'Los sedantes deprimen la respiración.']] },
