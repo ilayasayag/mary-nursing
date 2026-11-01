@@ -14,7 +14,7 @@
   const UNIT_COLORS = ['#58cc02', '#1cb0f6', '#ce82ff', '#ff9600', '#ff4b4b', '#00cd9c', '#ff86d0', '#2b70c9', '#ffc800', '#7c5cff'];
 
   /* ---------- state ---------- */
-  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, daily: { d: '', xp: 0 }, sims: {}, planStart: '', updatedAt: 0, lastBackup: 0, remindAfter: 0 };
+  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, daily: { d: '', xp: 0 }, sims: {}, stations: {}, planStart: '', updatedAt: 0, lastBackup: 0, remindAfter: 0 };
   let S;
   try { S = Object.assign({}, def, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = Object.assign({}, def); }
   if (!S.planStart) S.planStart = today();
@@ -39,7 +39,7 @@
   /* ---------- i18n ---------- */
   const UI = {
     en: {
-      learn: 'Learn', sim: 'Sim Ward', practice: 'Practice', plan: 'My plan', exam: 'The exam', me: 'Profile',
+      learn: 'Learn', sim: 'Stations', practice: 'Practice', plan: 'My plan', exam: 'The exam', me: 'Profile',
       morning: 'Good morning', evening: 'Good evening', day: 'Hi',
       daysTo: 'days to your exam', examDay: 'Exam day! You’ve got this.', examDone: 'Exam done. So proud of you!',
       unit: 'Unit', start: 'START', continue: 'Continue', check: 'Check', skip: 'Skip', next: 'Next', finish: 'Finish',
@@ -50,7 +50,7 @@
       quitQ: 'Quit? You’ll lose this lesson’s progress.', keep: 'Keep learning', unitQuiz: 'Unit checkpoint',
       streak: 'Day streak', dailyGoal: 'Daily goal', wod: 'Word of the day', listen: 'Listen', badges: 'Badges',
       simTitle: 'Simulation Ward', simIntro: 'Your exam is a virtual-reality patient-care simulation. Manage these patients step by step: safety, assessment, action, communication, documentation. The monitor reacts to your choices.',
-      patient: 'Patient', yrs: 'yrs', skills: { safety: 'Safety', assess: 'Assessment', act: 'Intervention', comm: 'Communication', doc: 'Documentation' },
+      patient: 'Patient', yrs: 'yrs', skills: { safety: 'Safety', assess: 'Assessment', act: 'Intervention', comm: 'Communication', doc: 'Documentation', teach: 'Teaching' },
       debrief: 'Debrief', best: 'Best answer', yourPick: 'Your choice', again: 'Play again', backWard: 'Back to the ward', pts: 'pts',
       flash: 'Hebrew cards', flashD: 'Medical Hebrew with spaced repetition: your language on the front, Hebrew on the back.', match: 'Match Madness', matchD: 'Match drugs to antidotes, signs to conditions, normal values and rules. Against the clock.',
       speed: 'Priority Rush', speedD: '90 seconds of exam questions. Streaks give double points!', source: 'Source', hebMoment: 'Hebrew moment', lvl1: 'Warm-up', lvl2: 'Core', lvl3: 'Exam-hard',
@@ -92,7 +92,7 @@
       cheer: ['You’re doing great, {n}!', 'Every lesson is a step closer, {n}.', '¡Vamos, {n}! Keep going.', 'Hebrew + nursing = superpower, {n}.']
     },
     es: {
-      learn: 'Aprender', sim: 'Simulación', practice: 'Practicar', plan: 'Mi plan', exam: 'El examen', me: 'Perfil',
+      learn: 'Aprender', sim: 'Estaciones', practice: 'Practicar', plan: 'Mi plan', exam: 'El examen', me: 'Perfil',
       morning: 'Buenos días', evening: 'Buenas noches', day: 'Hola',
       daysTo: 'días para tu examen', examDay: '¡Hoy es el examen! Tú puedes.', examDone: 'Examen hecho. ¡Qué orgullo!',
       unit: 'Unidad', start: 'EMPEZAR', continue: 'Continuar', check: 'Comprobar', skip: 'Saltar', next: 'Siguiente', finish: 'Terminar',
@@ -103,7 +103,7 @@
       quitQ: '¿Salir? Perderás el progreso de esta lección.', keep: 'Seguir aprendiendo', unitQuiz: 'Control de unidad',
       streak: 'Racha', dailyGoal: 'Meta diaria', wod: 'Palabra del día', listen: 'Escuchar', badges: 'Insignias',
       simTitle: 'Sala de simulación', simIntro: 'Tu examen es una simulación de cuidado del paciente en realidad virtual. Gestiona estos pacientes paso a paso: seguridad, valoración, intervención, comunicación y documentación. El monitor reacciona a tus decisiones.',
-      patient: 'Paciente', yrs: 'años', skills: { safety: 'Seguridad', assess: 'Valoración', act: 'Intervención', comm: 'Comunicación', doc: 'Documentación' },
+      patient: 'Paciente', yrs: 'años', skills: { safety: 'Seguridad', assess: 'Valoración', act: 'Intervención', comm: 'Comunicación', doc: 'Documentación', teach: 'Educación' },
       debrief: 'Análisis', best: 'Mejor respuesta', yourPick: 'Tu elección', again: 'Jugar otra vez', backWard: 'Volver a la sala', pts: 'pts',
       flash: 'Tarjetas de hebreo', flashD: 'Hebreo médico con repetición espaciada: tu idioma delante, hebreo detrás.', match: 'Parejas locas', matchD: 'Une fármacos con antídotos, signos con enfermedades, valores normales y normas. Contra reloj.',
       speed: 'Carrera de prioridades', speedD: '90 segundos de preguntas de examen. ¡Las rachas dan doble puntuación!', source: 'Fuente', hebMoment: 'Momento de hebreo', lvl1: 'Calentamiento', lvl2: 'Base', lvl3: 'Nivel examen',
@@ -355,7 +355,7 @@
       </section>
       ${S.xp >= 30 && Date.now() - (S.lastBackup || 0) > 3 * 864e5 && Date.now() > (S.remindAfter || 0) ? `<section class="remind card pop">${img('phone', 'wiggle')}<div><b>${t('remindTitle')}</b><p>${t('remindD')}</p>
         <div class="row"><button class="btn green small" onclick="A.share()">${t('shareBtn')}</button><button class="btn ghost small" onclick="A.remindLater()">${t('later')}</button></div></div></section>` : ''}
-      <a class="sim-cta tilt" href="#/sim">${img('sim', 'wiggle')}<div><b>${t('simTitle')}</b><span>${S.lang === 'es' ? `${Object.keys(S.sims).length} de ${NX.sims.length} casos hechos · practica para el 18/11` : `${Object.keys(S.sims).length} of ${NX.sims.length} cases done · practice for 18/11`}</span></div><span class="go">→</span></a>
+      ${todayStations()}
       <div class="games-strip">${[['triage', 'emerg'], ['medpass', 'pharm'], ['vitals', 'thermo'], ['rain', 'heb'], ['memory', 'flash']].map(([k, i], n) => `<a href="#/${k}" class="gs tilt" style="--d:${n * 60}ms">${img(i, 'wiggle')}<span>${t(k)}</span></a>`).join('')}</div>
       ${NX.modules.map((m, u) => {
         const col = UNIT_COLORS[u % UNIT_COLORS.length];
@@ -830,12 +830,52 @@
     ['sim', 'pph', 'mat'], ['sim', 'child', 'peds'], ['sim', 'psy', 'psych'], ['law', 'triage'], ['medpass', 'rain'], ['mock'], ['simall', 'vitals'], ['law', 'review'],
     ['triage', 'medpass'], ['mock', 'review'], ['simall', 'memory'], ['simall'], ['rest']
   ];
+  /* From 2 Nov 2026 the plan follows the MSR station format: a timed station or two every day, one procedure,
+     a short knowledge block, and two full exam-day rehearsals. Days before stay exactly as they were. */
+  const PLAN2_FROM = '2026-11-02';
+  const PLAN2 = {
+    '2026-11-02': ['redlines', 'st:a-mi', 'st:p-meds', 'calc'],
+    '2026-11-03': ['st:m-iv', 'st:p-iv', 'st:s-postop', 'review'],
+    '2026-11-04': ['invite', 'st:a-hypo', 'st:p-glucose', 'st:t-pen'],
+    '2026-11-05': ['st:a-ana', 'st:c-anx', 'st:p-bls', 'triage'],
+    '2026-11-06': ['st:a-bleed', 'st:p-blood', 'st:s-sepsis', 'calc'],
+    '2026-11-07': ['st:a-copd', 'st:t-inh', 'st:p-oxygen', 'medpass'],
+    '2026-11-08': ['st:a-stroke', 'st:c-refuse', 'st:m-enox', 'law'],
+    '2026-11-09': ['weak', 'st:a-pph', 'st:p-cath', 'review'],
+    '2026-11-10': ['st:a-child', 'st:m-peds', 'st:p-ngt', 'st:s-pph'],
+    '2026-11-11': ['st:a-psy', 'st:c-angry', 'st:t-warf', 'vitals'],
+    '2026-11-12': ['examday', 'review'],
+    '2026-11-13': ['weak', 'weak', 'st:p-dressing', 'st:t-hf'],
+    '2026-11-14': ['st:m-k', 'st:s-copd', 'calc', 'triage'],
+    '2026-11-15': ['redlines', 'procs', 'mock'],
+    '2026-11-16': ['examday', 'weak'],
+    '2026-11-17': ['examinfo', 'redlines', 'rest']
+  };
+  /* Learn page banner: today's station practice from the plan */
+  function todayStations() {
+    const es = S.lang === 'es', tasks = (PLAN2[today()] || []).filter(k => k.startsWith('st:') || k === 'examday' || k === 'weak');
+    const first = tasks[0], st = first && first.startsWith('st:') ? NX.stations.find(x => x.id === first.slice(3)) : null;
+    const href = first === 'examday' ? '#/examday' : first === 'weak' ? '#/station/weak' : st ? `#/station/${st.id}` : '#/stations';
+    const title = first === 'examday' ? (es ? 'Ensayo del día de examen' : 'Exam day rehearsal') : first === 'weak' ? (es ? 'Tu estación más débil' : 'Your weakest station') : st ? L2(st.t) : (es ? 'Practica una estación de MSR' : 'Practise an MSR station');
+    const passed = NX.stations.filter(x => (S.stations[x.id] || {}).pass).length;
+    const sub = `${first ? (es ? `Práctica de hoy${tasks.length > 1 ? ` (+${tasks.length - 1})` : ''}` : `Today’s exam practice${tasks.length > 1 ? ` (+${tasks.length - 1})` : ''}`) : (es ? 'Estaciones del examen MSR' : 'MSR exam stations')} · ${passed}/${NX.stations.length} ${es ? 'superadas' : 'passed'}`;
+    return `<a class="sim-cta tilt" href="${href}">${img(st ? st.img : 'sim', 'wiggle')}<div><b>${title}</b><span>${sub}</span></div><span class="go">→</span></a>`;
+  }
   R.plan = () => {
     const start = new Date(S.planStart + 'T12:00:00'), end = new Date('2026-11-17T12:00:00');
     const days = []; for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) days.push(new Date(d));
     const tdy = today();
+    const es = S.lang === 'es', T2 = (en, sp) => es ? sp : en;
     const taskHtml = task => {
       const [kind, a] = task;
+      if (kind.startsWith('st:')) { const st = NX.stations.find(x => x.id === kind.slice(3)); return st ? `<a href="#/station/${st.id}">${img(st.img)} ${L2(st.t)} <small>${st.mins}′</small></a>` : ''; }
+      if (kind === 'examday') return `<a class="big-task" href="#/examday">${img('trophy')} ${T2('Exam day rehearsal: 6 stations', 'Ensayo del día de examen: 6 estaciones')}</a>`;
+      if (kind === 'weak') return `<a href="#/station/weak">${img('target')} ${T2('Your weakest station', 'Tu estación más débil')}</a>`;
+      if (kind === 'calc') return `<a href="#/calc">${img('calc')} ${T2('Bedside calculations', 'Cálculos a pie de cama')}</a>`;
+      if (kind === 'redlines') return `<a href="#/redlines">${img('lock')} ${T2('Red-lines drill (say it aloud)', 'Líneas rojas (en voz alta)')}</a>`;
+      if (kind === 'procs') return `<a href="#/stations/proc">${img('syringe')} ${T2('All 10 procedures, fast', 'Los 10 procedimientos, rápido')}</a>`;
+      if (kind === 'invite') return `<span>${img('clipboard')} ${T2('Check the portal for your invitation (time and place)', 'Revisa el portal: tu citación (hora y lugar)')}</span>`;
+      if (kind === 'examinfo') return `<a href="#/exam">${img('clipboard')} ${T2('Exam-day checklist: ID, scrubs, route, sleep', 'Lista del día: documento, uniforme, ruta, dormir')}</a>`;
       if (kind === 'sim') { const s = NX.sims.find(x => x.id === a); return `<a href="#/sim/${a}">${img('sim')} ${L2(s.t)}</a>`; }
       if (kind === 'simall') return `<a href="#/sim">${img('sim')} ${t('simTitle')} ×3</a>`;
       if (kind === 'mock') return `<a href="#/mock">${img('mock')} ${t('mock')}</a>`;
@@ -848,8 +888,9 @@
       const m = modById(kind); return `<a href="#/">${img(m.id)} ${L(m.title)}</a>`;
     };
     view(`<section class="page-head">${img('calendar', 'head-img float')}<div><h1>${t('planTitle')}</h1><p>${t('planD')}</p></div></section>
+      <p class="plan-note">${img('sim')} ${T2('From 2 November the plan trains the MSR station format: timed stations, procedures, calculations and two full exam-day rehearsals (12 and 16 Nov). Days before stay as they were.', 'Desde el 2 de noviembre el plan entrena el formato de estaciones de MSR: estaciones cronometradas, procedimientos, cálculos y dos ensayos completos (12 y 16 nov). Los días anteriores se mantienen.')}</p>
       <ol class="sprint">${days.map((d, i) => {
-        const key = d.toISOString().slice(0, 10), item = SPRINT[Math.max(0, SPRINT.length - (days.length - i))];
+        const key = d.toISOString().slice(0, 10), item = key >= PLAN2_FROM ? PLAN2[key] : SPRINT[Math.max(0, SPRINT.length - (days.length - i))];
         const tasks = item[0] === 'sim' ? [['sim', item[1]], [item[2]]] : item.map(k => [k]);
         const isToday = key === tdy, done = S.plan[key];
         return `<li class="${isToday ? 'today' : ''} ${done ? 'done' : ''} ${key < tdy && !done ? 'missed' : ''}" style="--d:${i * 40}ms">
@@ -898,6 +939,7 @@
     m.badges = [...new Set([...(a.badges || []), ...(b.badges || [])])]; m.wrong = [...new Set([...(a.wrong || []), ...(b.wrong || [])])];
     m.stats = {}; for (const k of new Set([...Object.keys(a.stats || {}), ...Object.keys(b.stats || {})])) { const x = (a.stats || {})[k], y = (b.stats || {})[k]; m.stats[k] = !x ? y : !y ? x : x.n >= y.n ? x : y; }
     m.sims = {}; for (const k of new Set([...Object.keys(a.sims || {}), ...Object.keys(b.sims || {})])) { const x = (a.sims || {})[k] || {}, y = (b.sims || {})[k] || {}; m.sims[k] = { best: Math.max(x.best || 0, y.best || 0), stars: Math.max(x.stars || 0, y.stars || 0) }; }
+    m.stations = {}; for (const k of new Set([...Object.keys(a.stations || {}), ...Object.keys(b.stations || {})])) { const x = (a.stations || {})[k] || {}, y = (b.stations || {})[k] || {}; m.stations[k] = { best: Math.max(x.best || 0, y.best || 0), pass: !!(x.pass || y.pass), n: Math.max(x.n || 0, y.n || 0), last: (x.n || 0) >= (y.n || 0) ? x.last : y.last }; }
     m.lastBackup = Math.max(a.lastBackup || 0, b.lastBackup || 0);
     m.planStart = [a.planStart, b.planStart].filter(Boolean).sort()[0] || today();
     if ((a.last || '') !== (b.last || '')) { const l = (a.last || '') > (b.last || '') ? a : b; m.last = l.last; m.streak = l.streak; } else m.streak = Math.max(a.streak || 0, b.streak || 0);
@@ -1061,7 +1103,7 @@
     stopTimer(); stopVoice(); cancelAnimationFrame(ecgRAF);
     leaveHooks.splice(0).forEach(fn => { try { fn(); } catch (e) { /* ignore */ } });
     const [, page, a, b] = (location.hash || '#/').split('/');
-    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', triage: 'practice', medpass: 'practice', vitals: 'practice', rain: 'practice', memory: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
+    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', stations: 'sim', station: 'sim', examday: 'sim', calc: 'sim', redlines: 'sim', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', triage: 'practice', medpass: 'practice', vitals: 'practice', rain: 'practice', memory: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
     document.querySelectorAll('[data-nav]').forEach(x => x.classList.toggle('active', x.dataset.nav === tab));
     $('#app').classList.toggle('wide', tab !== 'learn' && tab !== 'me');
     (R[page] || R.learn)(a, b);

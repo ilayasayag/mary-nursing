@@ -16,8 +16,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800;900&family=Rubik:wght@500;700&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=202610310107">
-  <link rel="stylesheet" href="css/games.css?v=202610310107">
+  <link rel="stylesheet" href="css/style.css?v=202611012024">
+  <link rel="stylesheet" href="css/games.css?v=202611012024">
+  <link rel="stylesheet" href="css/stations.css?v=202611012024">
 </head>
 <body>
   <div class="shell">
@@ -25,7 +26,7 @@
       <a class="logo" href="#/"><span class="logo-mark" id="logoMark"></span><span>lev<b>.</b></span></a>
       <nav class="sidenav">
         <a data-nav="learn" href="#/"><img src="img/books.png" alt=""><span></span></a>
-        <a data-nav="sim" href="#/sim"><img src="img/sim.png" alt=""><span></span></a>
+        <a data-nav="sim" href="#/stations"><img src="img/sim.png" alt=""><span></span></a>
         <a data-nav="practice" href="#/practice"><img src="img/target.png" alt=""><span></span></a>
         <a data-nav="plan" href="#/plan"><img src="img/calendar.png" alt=""><span></span></a>
         <a data-nav="exam" href="#/exam"><img src="img/clipboard.png" alt=""><span></span></a>
@@ -40,7 +41,7 @@
 
   <nav class="tabbar">
     <a data-nav="learn" href="#/"><img src="img/books.png" alt=""><span></span></a>
-    <a data-nav="sim" href="#/sim"><img src="img/sim.png" alt=""><span></span></a>
+    <a data-nav="sim" href="#/stations"><img src="img/sim.png" alt=""><span></span></a>
     <a data-nav="practice" href="#/practice"><img src="img/target.png" alt=""><span></span></a>
     <a data-nav="plan" href="#/plan"><img src="img/calendar.png" alt=""><span></span></a>
     <a data-nav="exam" href="#/exam"><img src="img/clipboard.png" alt=""><span></span></a>
@@ -67,7 +68,43 @@
           <li>Languages: English, French, <b>Spanish</b>, Russian or Hebrew.</li>
           <li>It is based on the <b>mandatory reading list</b> for <a href="https://www1.health.gov.il/media/dolauqai/sep-dec2026.pdf" target="_blank" rel="noopener">September–December 2026</a>. Everything in this app follows that list (including <b>CPR by AHA 2020</b>).</li>
           <li>Your invitation with the exact time appears in the portal about <b>two weeks before</b>. Print it and bring it with your ID.</li>
-          <li>The Ministry does not publish the number of scenarios, their length or the scoring.</li>
+          <li>The Ministry does not publish the number of scenarios, their length, whether actors or VR headsets are used, or the scoring.</li>
+          <li>The official outline of the RN exam includes <b>pharmacological calculations</b>, so dose and rate calculations are practised at the bedside in the app.</li>
+        </ul>
+      </article>
+      <article class="card info">
+        <h2><img src="img/target.png" alt="">How MSR runs simulation licensing exams</h2>
+        <p>For its other nursing licensing exams, MSR uses <b>6–8 stations</b> of <b>5–20 minutes</b>, in a different order for each candidate:</p>
+        <ul>
+          <li><b>Mannequin station:</b> an evolving acute patient; assess, act, then answer the examiner’s fixed questions.</li>
+          <li><b>Procedure station:</b> one procedure or protocol in about 5 minutes.</li>
+          <li><b>Actor station:</b> a patient or family member (history, teaching, a difficult conversation), watched through a one-way window, then a <b>debrief</b> with the examiner.</li>
+          <li><b>Computer case:</b> a case on screen with typed answers.</li>
+        </ul>
+        <p class="muted">These are MSR’s published formats for other exams. Mary’s exam may differ; the app’s <a href="#/stations">Stations</a> practise all of them.</p>
+      </article>
+      <article class="card info">
+        <h2><img src="img/lock.png" alt="">Red lines: say them out loud in every station</h2>
+        <ol>
+          <li><b>Hand hygiene</b> on entering and leaving.</li>
+          <li><b>Introduce yourself</b>, name and role.</li>
+          <li><b>Identify</b> the patient with 2 identifiers (name + ID number) against the wristband, before any care or drug.</li>
+          <li><b>Explain</b> and ask for agreement; <b>privacy</b>.</li>
+          <li><b>Allergies</b> before any drug.</li>
+          <li>Never leave an unstable patient; <b>call for help</b> and hand over with <b>SBAR</b>.</li>
+          <li>On leaving: <b>bed low, rails as needed, call bell in reach</b>; <b>document</b>.</li>
+        </ol>
+      </article>
+      <article class="card info">
+        <h2><img src="img/calendar.png" alt="">The day at MSR</h2>
+        <p class="muted">From MSR’s rules for its licensing exams. Check your own invitation for anything different.</p>
+        <ul>
+          <li>Arrive at the time in the invitation: <b>latecomers are not admitted</b>.</li>
+          <li>Bring an <b>ID document</b>; come in <b>uniform (scrubs, or trousers and shirt)</b>.</li>
+          <li>Phones are switched off and handed to MSR staff. You get a briefing, a badge and ID stickers.</li>
+          <li>No talking with other candidates between stations.</li>
+          <li>Tell the licensing department at least a week before about any medical issue that may affect you.</li>
+          <li>Results by SMS and on the portal, within 30 working days.</li>
         </ul>
       </article>
       <article class="card info">
@@ -104,12 +141,16 @@
       <article class="card info">
         <h2><img src="img/bulb.png" alt="">Good to know</h2>
         <ul>
-          <li>The Ministry schedule page also mentions a simulation date on <b>23.11.26</b>. Trust the time on Mary’s own invitation.</li>
+          <li>On the Ministry calendar, <b>18.11.26</b> is the only simulation exam for immigrants. (The 23.11.26 date at MSR is a forensic-nursing exam, not Mary’s.)</li>
+          <li>Eligibility (Ministry letter, January 2026): more than 3 years of experience in a general hospital or a primary community clinic abroad.</li>
+          <li>Questions about the exam format: <b>siud.test@moh.gov.il</b>.</li>
           <li>After passing, a temporary work permit is valid for 3 years. Hebrew proficiency must be proven within that time, so keep going with the Hebrew lessons.</li>
           <li>Questions about eligibility go to the Nursing Division Certification Department, phone *5400.</li>
         </ul>
         <p class="links">
           <a href="https://www1.health.gov.il/en/nursing/catch-up/conferences-events/registered-nurse-licensure-exams/exam-for-new-immigrants-2/" target="_blank" rel="noopener">Official exam page ↗</a>
+          <a href="https://www1.health.gov.il/media/vebifumz/exam-for-new-immigrants-2026.pdf" target="_blank" rel="noopener">Ministry letter 2026 (PDF) ↗</a>
+          <a href="https://www1.health.gov.il/en/nursing/study/training-courses/training-courses-exam/continuing-education-exam-day/" target="_blank" rel="noopener">MSR exam-day rules ↗</a>
           <a href="https://www1.health.gov.il/en/nursing/work/immigrant-nurses/registered-nurse-abroad-studies-olim/" target="_blank" rel="noopener">Immigrant nurses ↗</a>
         </p>
       </article>
@@ -134,7 +175,43 @@
           <li>Idiomas: inglés, francés, <b>español</b>, ruso o hebreo.</li>
           <li>Se basa en la <b>bibliografía obligatoria</b> de <a href="https://www1.health.gov.il/media/dolauqai/sep-dec2026.pdf" target="_blank" rel="noopener">septiembre–diciembre 2026</a>. Todo en esta app sigue esa lista (incluida la <b>RCP según AHA 2020</b>).</li>
           <li>La invitación con la hora exacta aparece en el portal unas <b>dos semanas antes</b>. Imprímela y llévala con tu documento de identidad.</li>
-          <li>El Ministerio no publica cuántos escenarios hay, cuánto duran ni cómo se puntúan.</li>
+          <li>El Ministerio no publica cuántos escenarios hay, cuánto duran, si hay actores o gafas de realidad virtual, ni cómo se puntúan.</li>
+          <li>El temario oficial del examen de RN incluye <b>cálculos farmacológicos</b>, así que en la app se practican cálculos de dosis y ritmos a pie de cama.</li>
+        </ul>
+      </article>
+      <article class="card info">
+        <h2><img src="img/target.png" alt="">Cómo hace MSR los exámenes de simulación</h2>
+        <p>En sus otros exámenes de licencia de enfermería, MSR usa <b>6–8 estaciones</b> de <b>5–20 minutos</b>, en distinto orden para cada candidato:</p>
+        <ul>
+          <li><b>Estación con maniquí:</b> un paciente agudo que evoluciona; valorar, actuar y responder las preguntas fijas del examinador.</li>
+          <li><b>Estación de procedimiento:</b> un procedimiento o protocolo en unos 5 minutos.</li>
+          <li><b>Estación con actor:</b> paciente o familiar (anamnesis, educación, conversación difícil), observada tras un espejo, y luego un <b>interrogatorio</b> con el examinador.</li>
+          <li><b>Caso en ordenador:</b> un caso en pantalla con respuestas escritas.</li>
+        </ul>
+        <p class="muted">Son los formatos publicados por MSR para otros exámenes. El de Mary puede variar; las <a href="#/stations">Estaciones</a> de la app los practican todos.</p>
+      </article>
+      <article class="card info">
+        <h2><img src="img/lock.png" alt="">Líneas rojas: dilas en voz alta en cada estación</h2>
+        <ol>
+          <li><b>Higiene de manos</b> al entrar y al salir.</li>
+          <li><b>Preséntate</b>: nombre y función.</li>
+          <li><b>Identifica</b> al paciente con 2 datos (nombre + número de ID) frente a la pulsera, antes de cualquier cuidado o fármaco.</li>
+          <li><b>Explica</b> y pide conformidad; <b>intimidad</b>.</li>
+          <li><b>Alergias</b> antes de cualquier fármaco.</li>
+          <li>Nunca dejes solo a un paciente inestable; <b>pide ayuda</b> y comunica con <b>SBAR</b>.</li>
+          <li>Al salir: <b>cama baja, barandillas según necesidad, timbre a mano</b>; <b>registra</b>.</li>
+        </ol>
+      </article>
+      <article class="card info">
+        <h2><img src="img/calendar.png" alt="">El día en MSR</h2>
+        <p class="muted">Según las normas de MSR para sus exámenes de licencia. Revisa tu invitación por si algo cambia.</p>
+        <ul>
+          <li>Llega a la hora de la invitación: <b>no se admite a quien llega tarde</b>.</li>
+          <li>Lleva un <b>documento de identidad</b>; ven con <b>uniforme (pijama clínico, o pantalón y camisa)</b>.</li>
+          <li>Los móviles se apagan y se entregan al personal de MSR. Hay una explicación inicial, una acreditación y etiquetas.</li>
+          <li>No se habla con otros candidatos entre estaciones.</li>
+          <li>Avisa al departamento de exámenes al menos una semana antes de cualquier problema médico que pueda afectarte.</li>
+          <li>Resultados por SMS y en el portal, en 30 días laborables.</li>
         </ul>
       </article>
       <article class="card info">
@@ -171,35 +248,41 @@
       <article class="card info">
         <h2><img src="img/bulb.png" alt="">Conviene saber</h2>
         <ul>
-          <li>La página de fechas del Ministerio menciona también una simulación el <b>23.11.26</b>. Confía en la hora de la invitación de Mary.</li>
+          <li>En el calendario del Ministerio, el <b>18.11.26</b> es el único examen de simulación para inmigrantes. (La fecha 23.11.26 en MSR es un examen de enfermería forense, no el de Mary.)</li>
+          <li>Requisitos (carta del Ministerio, enero 2026): más de 3 años de experiencia en un hospital general o una clínica comunitaria de atención primaria en el extranjero.</li>
+          <li>Preguntas sobre el formato del examen: <b>siud.test@moh.gov.il</b>.</li>
           <li>Al aprobar se obtiene un permiso temporal de 3 años. En ese plazo hay que acreditar el hebreo, así que sigue con las lecciones de hebreo.</li>
           <li>Dudas de elegibilidad: Departamento de Certificación de la División de Enfermería, teléfono *5400.</li>
         </ul>
         <p class="links">
           <a href="https://www1.health.gov.il/en/nursing/catch-up/conferences-events/registered-nurse-licensure-exams/exam-for-new-immigrants-2/" target="_blank" rel="noopener">Página oficial ↗</a>
+          <a href="https://www1.health.gov.il/media/vebifumz/exam-for-new-immigrants-2026.pdf" target="_blank" rel="noopener">Carta del Ministerio 2026 (PDF) ↗</a>
+          <a href="https://www1.health.gov.il/en/nursing/study/training-courses/training-courses-exam/continuing-education-exam-day/" target="_blank" rel="noopener">Normas del día en MSR ↗</a>
           <a href="https://www1.health.gov.il/en/nursing/work/immigrant-nurses/registered-nurse-abroad-studies-olim/" target="_blank" rel="noopener">Enfermeras inmigrantes ↗</a>
         </p>
       </article>
     </div>
   </template>
 
-  <script src="js/data/core.js?v=202610310107"></script>
-  <script src="js/data/m-fund.js?v=202610310107"></script>
-  <script src="js/data/m-medsurg.js?v=202610310107"></script>
-  <script src="js/data/m-pharm.js?v=202610310107"></script>
-  <script src="js/data/m-peds.js?v=202610310107"></script>
-  <script src="js/data/m-mat.js?v=202610310107"></script>
-  <script src="js/data/m-psych.js?v=202610310107"></script>
-  <script src="js/data/m-emerg.js?v=202610310107"></script>
-  <script src="js/data/m-law.js?v=202610310107"></script>
-  <script src="js/data/m-heb.js?v=202610310107"></script>
-  <script src="js/data/lessonq.js?v=202610310107"></script>
-  <script src="js/data/pairs.js?v=202610310107"></script>
-  <script src="js/data/sims.js?v=202610310107"></script>
-  <script src="js/data/audio.js?v=202610310107"></script>
-  <script src="js/cloud-config.js?v=202610310107"></script>
-  <script src="js/data/games-data.js?v=202610310107"></script>
-  <script src="js/games.js?v=202610310107"></script>
-  <script src="js/app.js?v=202610310107"></script>
+  <script src="js/data/core.js?v=202611012024"></script>
+  <script src="js/data/m-fund.js?v=202611012024"></script>
+  <script src="js/data/m-medsurg.js?v=202611012024"></script>
+  <script src="js/data/m-pharm.js?v=202611012024"></script>
+  <script src="js/data/m-peds.js?v=202611012024"></script>
+  <script src="js/data/m-mat.js?v=202611012024"></script>
+  <script src="js/data/m-psych.js?v=202611012024"></script>
+  <script src="js/data/m-emerg.js?v=202611012024"></script>
+  <script src="js/data/m-law.js?v=202611012024"></script>
+  <script src="js/data/m-heb.js?v=202611012024"></script>
+  <script src="js/data/lessonq.js?v=202611012024"></script>
+  <script src="js/data/pairs.js?v=202611012024"></script>
+  <script src="js/data/sims.js?v=202611012024"></script>
+  <script src="js/data/stations.js?v=202611012024"></script>
+  <script src="js/data/audio.js?v=202611012024"></script>
+  <script src="js/cloud-config.js?v=202611012024"></script>
+  <script src="js/data/games-data.js?v=202611012024"></script>
+  <script src="js/games.js?v=202611012024"></script>
+  <script src="js/stations.js?v=202611012024"></script>
+  <script src="js/app.js?v=202611012024"></script>
 </body>
 </html>
