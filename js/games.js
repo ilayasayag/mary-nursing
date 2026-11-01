@@ -8,7 +8,7 @@
   const A = window.A;
   const es = () => S().lang === 'es';
   const best = (k, v, lower = false) => { const b = S().best; const cur = b[k]; if (cur === undefined || (lower ? v < cur : v > cur)) { b[k] = v; save(); return true; } return false; };
-  const head = (icon, key, extra = '') => `<a class="crumb" href="#/practice">← ${t('practice')}</a><div class="game-top"><h1>${img(icon)} ${t(key)}</h1>${extra}</div>`;
+  const head = (icon, key, extra = '') => `<a class="crumb" href="${/\/ul$/.test(location.hash) ? '#/ulpan/games' : '#/practice'}">← ${/\/ul$/.test(location.hash) ? (S().lang === 'es' ? 'Juegos' : 'Games') : t('practice')}</a><div class="game-top"><h1>${img(icon)} ${t(key)}</h1>${extra}</div>`;
   const vitalsChips = v => [['HR', v.hr, '/min'], ['BP', v.bp, ''], ['SpO₂', v.spo2, '%'], ['RR', v.rr, '/min'], ['T', v.t, '°C'], ['Glu', v.gl, 'mg/dL']]
     .filter(x => x[1] !== undefined).map(([k, val, u]) => `<span class="vchip"><small>${k}</small><b>${val}</b><i>${u}</i></span>`).join('');
   function endCard(title, big, sub, again, extra = '', happy = true) {
@@ -164,13 +164,15 @@
 
   /* ======================= WORD RAIN ======================= */
   let WR = null;
-  R.rain = () => {
+  let rainSrc = '';
+  R.rain = src => {
+    rainSrc = src === 'ul' ? 'ul' : '';
     const prior = S().best.rain;
     view(`${head('heb', 'rain')}<section class="card center-card rain-intro">${img('heb', 'head-img float')}<p>${t('rainD')}</p>
       ${prior ? `<p class="chip">${t('record')}: ${prior}</p>` : ''}<button class="btn green big" onclick="A.rainGo()">${t('play')} ▶</button></section>`);
   };
   A.rainGo = () => {
-    const pool = uniqVocab(NX.vocab.filter(v => !v.alpha && v.he.length <= 22));
+    const pool = uniqVocab(rainSrc === 'ul' && LEV.ulVocab ? LEV.ulVocab() : NX.vocab.filter(v => !v.alpha && v.he.length <= 22));
     WR = { pool, words: [], score: 0, lives: 3, combo: 0, level: 1, speed: 38, spawnEvery: 3200, lastSpawn: 0, last: performance.now(), target: null, raf: 0, over: false };
     view(`<div class="rain-hud"><span class="hearts">${'❤'.repeat(3)}</span><b id="rscore">0</b><span class="chip" id="rlevel">Lv 1</span></div>
       <div class="rain-stage" id="stage"><div class="clouds"></div><div class="ground"></div></div>
@@ -237,12 +239,12 @@
   let MF = null;
   R.memory = id => {
     id = id || 'all';
-    const pool = uniqVocab(shuffle(NX.vocab.filter(v => !v.alpha && (id === 'all' || v.m === id) && v.he.length <= 18 && meaning(v).length <= 26)));
+    const pool = uniqVocab(shuffle(id === 'ul' && LEV.ulVocab ? LEV.ulVocab() : NX.vocab.filter(v => !v.alpha && (id === 'all' || v.m === id) && v.he.length <= 18 && meaning(v).length <= 26)));
     const set = pool.slice(0, 6);
     MF = { id, set, open: [], matched: 0, moves: 0, start: Date.now(), lock: false };
     const cards = shuffle(set.flatMap(v => [{ v, side: 'he' }, { v, side: 'mean' }]));
     view(`${head('flash', 'memory', `<span class="chip" id="mmoves">0 ${t('moves')}</span><label class="deck"><select onchange="location.hash='#/memory/'+this.value">
-        <option value="all">${t('all')}</option>${NX.modules.map(m => `<option value="${m.id}" ${m.id === id ? 'selected' : ''}>${esc(LEV.L(m.title))}</option>`).join('')}</select></label>`)}
+        <option value="all">${t('all')}</option><option value="ul" ${id === 'ul' ? 'selected' : ''}>${S().lang === 'es' ? 'Ulpán (hebreo general)' : 'Ulpan (general Hebrew)'}</option>${NX.modules.map(m => `<option value="${m.id}" ${m.id === id ? 'selected' : ''}>${esc(LEV.L(m.title))}</option>`).join('')}</select></label>`)}
       <div class="mem-grid">${cards.map((c, k) => `<button class="mem" data-id="${c.v.id}" data-k="${k}" onclick="A.memFlip(this)">
         <span class="mem-in"><span class="mem-back">${img('heart')}</span><span class="mem-front ${c.side}">${c.side === 'he' ? `<span class="he" lang="he" dir="rtl">${c.v.he}</span>` : `<span>${esc(meaning(c.v))}</span>`}</span></span></button>`).join('')}</div>`);
   };

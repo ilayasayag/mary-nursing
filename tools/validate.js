@@ -5,7 +5,7 @@ const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const dataFiles = [...html.matchAll(/<script src="(js\/data\/[^"?]+)/g)].map(m => m[1]);
+const dataFiles = [...html.matchAll(/<script src="(js\/(?:data|ulpan)\/[^"?]+)/g)].map(m => m[1]);
 dataFiles.forEach(f => (0, eval)(fs.readFileSync(path.join(root, f), 'utf8')));
 const NX = window.NX;
 
@@ -139,6 +139,28 @@ for (const st of S) {
   (st.dq || []).forEach((r, k) => { clue(`station ${st.id} debrief ${k} (en)`, r[2], r[0]); clue(`station ${st.id} debrief ${k} (es)`, r[3], r[0]); });
 }
 for (const c of T) both(`teach ${c.id} teach-back`, c.back, c.back.findIndex(b => b[0] === 2));
+
+/* Ulpan course */
+const UL = window.UL;
+if (UL) {
+  const lexHe = new Set(UL.lex.map(e => e.he));
+  UL.lex.forEach(e => { if (!filled(e.he) || !filled(e.en) || !filled(e.es) || !filled(e.topic)) err(`ulpan word ${e.id}`, 'needs he/en/es/topic'); });
+  UL.units.forEach(u => { imgOk(`ulpan ${u.id}`, u.icon); u.lessons.forEach((l, i) => (l.words || []).forEach(w => { if (!lexHe.has(w)) err(`ulpan ${u.id}-${i}`, `word ${w} not in the vocabulary`); }));
+    u.lessons.forEach((l, i) => (l.teach || []).forEach(t => { if (t.k === 'table' && !UL.verb(t.verb)) err(`ulpan ${u.id}-${i}`, `unknown verb ${t.verb}`); })); });
+  UL.verbs.forEach(v => { if (!UL.vx[v.inf]) err(`verb ${v.inf}`, 'no example words'); if (v.past.length !== 9 || v.fut.length !== 8 || v.pres.length !== 4) err(`verb ${v.inf}`, 'wrong number of forms'); });
+  const gapBank = (name, rowsB) => rowsB.forEach((x, i) => { if (!x.s.includes('_')) err(`${name} ${i}`, 'no gap'); if (x.d.includes(x.a)) err(`${name} ${i}`, 'answer also a distractor'); if (!filled(x.en) || !filled(x.es)) err(`${name} ${i}`, 'translation missing'); });
+  ['prep', 'link', 'voc', 'suffix', 'smichut', 'cond'].forEach(b => gapBank(b, UL[b]));
+  UL.qword.forEach((x, i) => { if (x.d.includes(x.q)) err(`qword ${i}`, 'answer also a distractor'); clue(`qword ${i}`, [x.q, ...x.d], 0); });
+  UL.plural.forEach((x, i) => { if (x.d.includes(x.p)) err(`plural ${i}`, 'answer also a distractor'); clue(`plural ${i}`, [x.p, ...x.d], 0); });
+  UL.talks.forEach(t => { imgOk(`talk ${t.id}`, t.img); t.lines.forEach((l, k) => { if (!UL.cast[l[0]]) err(`talk ${t.id} line ${k}`, `unknown speaker ${l[0]}`);
+      if (l[0] === 'me') { if (l[1].length !== 3 || new Set(l[1]).size !== 3) err(`talk ${t.id} line ${k}`, 'needs 3 different replies'); clue(`talk ${t.id} line ${k}`, l[1], 0); } });
+    t.q.forEach((q, k) => { if (!(q[2] >= 0 && q[2] < q[1].length)) err(`talk ${t.id} q ${k}`, 'answer out of range'); }); });
+  UL.reads.forEach(r => r.q.forEach((q, k) => { const ok = q[0] === 'multi' ? q[3].every(i => i < q[2].length) : q[3] >= 0 && q[3] < q[2].length; if (!ok) err(`reading ${r.id} q ${k}`, 'answer out of range');
+    if (q[0] === 'mc') clue(`reading ${r.id} q ${k}`, q[2], q[3]); }));
+  Object.entries(UL.placeRows).forEach(([st, rs]) => rs.forEach((r, k) => { if (!UL.skills[r[0]]) err(`placement ${st} ${k}`, `unknown skill ${r[0]}`); if (r[3].split(',').includes(r[2])) err(`placement ${st} ${k}`, 'answer also a distractor'); }));
+  Object.values(UL.audio || {}).forEach(id => { if (!fs.existsSync(path.join(root, 'audio/he', id + '.m4a'))) err('ulpan audio', `missing ${id}.m4a`); });
+  console.log(`ulpan: ${UL.lex.length} words · ${UL.verbs.length} verbs · ${UL.units.length} units · ${UL.talks.length} conversations · ${UL.reads.length} readings · ${Object.keys(UL.audio || {}).length} recordings`);
+}
 
 /* report */
 const pct = longest.n ? Math.round(100 * longest.en / longest.n) : 0;

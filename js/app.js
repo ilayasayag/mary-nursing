@@ -14,7 +14,7 @@
   const UNIT_COLORS = ['#58cc02', '#1cb0f6', '#ce82ff', '#ff9600', '#ff4b4b', '#00cd9c', '#ff86d0', '#2b70c9', '#ffc800', '#7c5cff'];
 
   /* ---------- state ---------- */
-  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, daily: { d: '', xp: 0 }, sims: {}, stations: {}, planStart: '', updatedAt: 0, lastBackup: 0, remindAfter: 0 };
+  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, daily: { d: '', xp: 0 }, sims: {}, stations: {}, ulpan: null, planStart: '', updatedAt: 0, lastBackup: 0, remindAfter: 0 };
   let S;
   try { S = Object.assign({}, def, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = Object.assign({}, def); }
   if (!S.planStart) S.planStart = today();
@@ -39,7 +39,7 @@
   /* ---------- i18n ---------- */
   const UI = {
     en: {
-      learn: 'Learn', sim: 'Stations', practice: 'Practice', plan: 'My plan', exam: 'The exam', me: 'Profile',
+      learn: 'Learn', sim: 'Stations', ulpan: 'Hebrew', practice: 'Practice', plan: 'My plan', exam: 'The exam', me: 'Profile',
       morning: 'Good morning', evening: 'Good evening', day: 'Hi',
       daysTo: 'days to your exam', examDay: 'Exam day! You’ve got this.', examDone: 'Exam done. So proud of you!',
       unit: 'Unit', start: 'START', continue: 'Continue', check: 'Check', skip: 'Skip', next: 'Next', finish: 'Finish',
@@ -92,7 +92,7 @@
       cheer: ['You’re doing great, {n}!', 'Every lesson is a step closer, {n}.', '¡Vamos, {n}! Keep going.', 'Hebrew + nursing = superpower, {n}.']
     },
     es: {
-      learn: 'Aprender', sim: 'Estaciones', practice: 'Practicar', plan: 'Mi plan', exam: 'El examen', me: 'Perfil',
+      learn: 'Aprender', sim: 'Estaciones', ulpan: 'Hebreo', practice: 'Practicar', plan: 'Mi plan', exam: 'El examen', me: 'Perfil',
       morning: 'Buenos días', evening: 'Buenas noches', day: 'Hola',
       daysTo: 'días para tu examen', examDay: '¡Hoy es el examen! Tú puedes.', examDone: 'Examen hecho. ¡Qué orgullo!',
       unit: 'Unidad', start: 'EMPEZAR', continue: 'Continuar', check: 'Comprobar', skip: 'Saltar', next: 'Siguiente', finish: 'Terminar',
@@ -940,6 +940,10 @@
     m.stats = {}; for (const k of new Set([...Object.keys(a.stats || {}), ...Object.keys(b.stats || {})])) { const x = (a.stats || {})[k], y = (b.stats || {})[k]; m.stats[k] = !x ? y : !y ? x : x.n >= y.n ? x : y; }
     m.sims = {}; for (const k of new Set([...Object.keys(a.sims || {}), ...Object.keys(b.sims || {})])) { const x = (a.sims || {})[k] || {}, y = (b.sims || {})[k] || {}; m.sims[k] = { best: Math.max(x.best || 0, y.best || 0), stars: Math.max(x.stars || 0, y.stars || 0) }; }
     m.stations = {}; for (const k of new Set([...Object.keys(a.stations || {}), ...Object.keys(b.stations || {})])) { const x = (a.stations || {})[k] || {}, y = (b.stations || {})[k] || {}; m.stations[k] = { best: Math.max(x.best || 0, y.best || 0), pass: !!(x.pass || y.pass), n: Math.max(x.n || 0, y.n || 0), last: (x.n || 0) >= (y.n || 0) ? x.last : y.last }; }
+    if (a.ulpan || b.ulpan) { const x = a.ulpan || {}, y = b.ulpan || {}, nw = newer.ulpan || {}, mx = (p, q = {}) => { const o = { ...p }; for (const k in q) o[k] = Math.max(o[k] || 0, q[k] || 0); return o; };
+      m.ulpan = { ...x, ...y, ...nw, xp: Math.max(x.xp || 0, y.xp || 0), done: { ...x.done, ...y.done }, tests: mx(x.tests, y.tests), box: mx(x.box, y.box), best: mx(x.best, y.best), exams: mx(x.exams, y.exams), talks: mx(x.talks, y.talks),
+        decks: [...(x.decks || []), ...(y.decks || [])].filter((d, i, arr) => arr.findIndex(e => e.id === d.id) === i).slice(0, 20),
+        skill: Object.fromEntries([...new Set([...Object.keys(x.skill || {}), ...Object.keys(y.skill || {})])].map(k => { const p = (x.skill || {})[k] || { n: 0 }, q = (y.skill || {})[k] || { n: 0 }; return [k, p.n >= q.n ? p : q]; })) }; }
     m.lastBackup = Math.max(a.lastBackup || 0, b.lastBackup || 0);
     m.planStart = [a.planStart, b.planStart].filter(Boolean).sort()[0] || today();
     if ((a.last || '') !== (b.last || '')) { const l = (a.last || '') > (b.last || '') ? a : b; m.last = l.last; m.streak = l.streak; } else m.streak = Math.max(a.streak || 0, b.streak || 0);
@@ -1103,7 +1107,7 @@
     stopTimer(); stopVoice(); cancelAnimationFrame(ecgRAF);
     leaveHooks.splice(0).forEach(fn => { try { fn(); } catch (e) { /* ignore */ } });
     const [, page, a, b] = (location.hash || '#/').split('/');
-    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', stations: 'sim', station: 'sim', examday: 'sim', calc: 'sim', redlines: 'sim', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', triage: 'practice', medpass: 'practice', vitals: 'practice', rain: 'practice', memory: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
+    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', stations: 'sim', station: 'sim', examday: 'sim', calc: 'sim', redlines: 'sim', ulpan: 'ulpan', ulesson: 'ulpan', utest: 'ulpan', uweak: 'ulpan', uplace: 'ulpan', ugame: 'ulpan', utalk: 'ulpan', uexam: 'ulpan', udeck: 'ulpan', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', triage: 'practice', medpass: 'practice', vitals: 'practice', rain: 'practice', memory: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
     document.querySelectorAll('[data-nav]').forEach(x => x.classList.toggle('active', x.dataset.nav === tab));
     $('#app').classList.toggle('wide', tab !== 'learn' && tab !== 'me');
     (R[page] || R.learn)(a, b);
