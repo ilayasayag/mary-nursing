@@ -221,7 +221,7 @@
   function rootMark(form, root) {
     if (!root) return he(form);
     const r = root.split('').map(c => UL.fixFinals(c)), base = c => ({ 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' }[c] || c);
-    let k = 0; const out = form.split('').map(ch => { if (k < 3 && base(ch) === base(r[k])) { k++; return `<b class="rl">${ch}</b>`; } return ch; }).join('');
+    let k = 0; const out = form.split('').map(ch => { if (k < 3 && base(ch) === base(r[k])) { k++; return `<b class="rootl">${ch}</b>`; } return ch; }).join('');
     return `<span class="he" lang="he" dir="rtl">${out}</span>`;
   }
   function conjTable(v, tense) {
@@ -473,7 +473,7 @@
     const x = pick(UL.prep); PP.cur = x; PP.locked = false;
     $('#ppq').innerHTML = gapHtml(x.s);
     const opts = shuffle([x.a, ...x.d]); const speed = 24 + PP.k * 2.2;
-    $('#bubbles').innerHTML = opts.map((o, i) => `<button class="bubble he" lang="he" style="--x:${10 + i * 22}%;--dur:${Math.max(4.5, 9 - PP.k * .3)}s;--delay:${i * .25}s" onclick="A.ppTap(this,'${esc(o)}')">${esc(o)}</button>`).join('');
+    $('#bubbles').innerHTML = opts.map((o, i) => `<button class="pbub he" lang="he" style="--x:${10 + i * 22}%;--dur:${Math.max(4.5, 9 - PP.k * .3)}s;--delay:${i * .25}s" onclick="A.ppTap(this,'${esc(o)}')">${esc(o)}</button>`).join('');
     clearTimeout(PP.timer); PP.timer = setTimeout(() => { if (!PP.locked) A.ppTap(null, null); }, (Math.max(4.5, 9 - PP.k * .3) + .8) * 1000);
   }
   A.ppTap = (el, o) => {

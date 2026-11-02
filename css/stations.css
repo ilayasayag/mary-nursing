@@ -46,13 +46,13 @@
 .ostep .onum { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; border: 2px dashed var(--line); font: 700 1rem var(--display); color: var(--muted); }
 .ostep.on { border-color: #84d8ff; background: var(--blue-l); }
 .ostep.on .onum { border: none; background: var(--blue); color: #fff; animation: pop .3s; }
-.ostep.done { cursor: default; animation: slideIn .35s both; }
+.ostep.done { cursor: default; animation: stepSlideIn .35s both; }
 .ostep.done > b { margin-left: auto; color: var(--green-d); }
 .ostep.done > small { margin-left: auto; color: var(--red-d); font-weight: 800; white-space: nowrap; }
 .ostep.right { border-color: var(--green); } .ostep.right .onum { border: none; background: var(--green); color: #fff; }
 .ostep.bad { border-color: var(--red); } .ostep.bad .onum { border: none; background: var(--red); color: #fff; }
 .critag { font-style: normal; font-size: .72rem; font-weight: 900; color: var(--orange-d); background: var(--orange-l); padding: 1px 6px; border-radius: 6px; }
-@keyframes slideIn { from { opacity: 0; transform: translateX(-12px); } }
+@keyframes stepSlideIn { from { opacity: 0; transform: translateX(-12px); } }
 
 .sbar-list { display: grid; gap: 10px; margin: 12px 0; }
 .sbar-item { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border: 2px solid var(--line); border-radius: 14px; }

@@ -71,7 +71,7 @@
 .uteach p { margin: 6px 0; } .vt-head { font-weight: 800; }
 .utable { width: 100%; border-collapse: collapse; font-size: 1rem; } .utable td, .utable th { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: start; }
 .utable td:first-child .he { font-weight: 800; } .utable.conj td:last-child .he { font-size: 1.25rem; } .utable.pat small { display: block; color: var(--muted); font-size: .72rem; }
-.rl { color: var(--coral); }
+.rootl { color: var(--coral); }
 .sfx-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; } .sfx-grid div { display: grid; justify-items: center; padding: 6px; border-radius: 12px; background: var(--soft); } .sfx-grid b { color: var(--coral); font-size: 1.3rem; }
 .mini-spk { border: 0; background: none; cursor: pointer; font-size: .9rem; opacity: .6; margin-inline-start: 6px; } .mini-spk:hover { opacity: 1; }
 
@@ -86,11 +86,11 @@
 @keyframes forgeIn { from { transform: translateY(-30px) scale(.6); opacity: 0; } }
 .pop-stage { position: relative; min-height: 380px; overflow: hidden; background: linear-gradient(var(--blue-l), var(--surface)); }
 .bubbles { position: absolute; inset: 120px 0 0 0; }
-.bubble { position: absolute; left: var(--x); bottom: -90px; width: 84px; height: 84px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .8); cursor: pointer; color: #fff; font-size: 1.15rem; font-weight: 700;
-  background: radial-gradient(circle at 30% 30%, #9fe9ff, var(--blue)); box-shadow: inset -6px -8px 12px rgba(0, 0, 0, .15); animation: rise var(--dur) linear var(--delay) forwards; }
-.bubble:nth-child(2) { background: radial-gradient(circle at 30% 30%, #ffd1c2, var(--coral)); } .bubble:nth-child(3) { background: radial-gradient(circle at 30% 30%, #c8f7ef, var(--ul)); } .bubble:nth-child(4) { background: radial-gradient(circle at 30% 30%, #f0d7ff, var(--purple)); }
-.bubble.popped { animation: popped .35s forwards; } .bubble.wrong { animation: shake .4s; filter: grayscale(1); }
-@keyframes rise { 0% { transform: translateY(0) translateX(0); } 50% { transform: translateY(-160px) translateX(8px); } 100% { transform: translateY(-330px) translateX(-6px); } }
+.pbub { position: absolute; left: var(--x); bottom: -90px; width: 84px; height: 84px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .8); cursor: pointer; color: #fff; font-size: 1.15rem; font-weight: 700;
+  background: radial-gradient(circle at 30% 30%, #9fe9ff, var(--blue)); box-shadow: inset -6px -8px 12px rgba(0, 0, 0, .15); animation: bubbleRise var(--dur) linear var(--delay) forwards; }
+.pbub:nth-child(2) { background: radial-gradient(circle at 30% 30%, #ffd1c2, var(--coral)); } .pbub:nth-child(3) { background: radial-gradient(circle at 30% 30%, #c8f7ef, var(--ul)); } .pbub:nth-child(4) { background: radial-gradient(circle at 30% 30%, #f0d7ff, var(--purple)); }
+.pbub.popped { animation: popped .35s forwards; } .pbub.wrong { animation: shake .4s; filter: grayscale(1); }
+@keyframes bubbleRise { 0% { transform: translateY(0) translateX(0); } 50% { transform: translateY(-160px) translateX(8px); } 100% { transform: translateY(-330px) translateX(-6px); } }
 @keyframes popped { to { transform: scale(1.6); opacity: 0; } }
 .agree-card { min-height: 260px; text-align: center; } .agree-card .choices.tiles { grid-template-columns: 1fr 1fr; }
 .game-top .chip { font-weight: 800; }
@@ -143,7 +143,7 @@
   .uhead { grid-template-columns: auto 1fr; } .uxp { display: none; } .ubadge { width: 60px; height: 60px; } .uhead h1 { font-size: 1.15rem; }
   .uprofile .two { grid-template-columns: 1fr; } .he-sent { font-size: 1.25rem; } .uprompt { font-size: 1.6rem; }
   .uclock { width: 140px; height: 140px; } .root-l { width: 48px; height: 48px; font-size: 1.6rem; } .anvil .slot { width: 36px; height: 44px; font-size: 1.3rem; }
-  .bubble { width: 70px; height: 70px; font-size: 1rem; } .clock-teach { grid-template-columns: 1fr; justify-items: center; }
+  .pbub { width: 70px; height: 70px; font-size: 1rem; } .clock-teach { grid-template-columns: 1fr; justify-items: center; }
 }
 /* scan review: one clean card per recognised line */
 .ocr-review { display: grid; grid-template-columns: 140px 1fr; gap: 14px; align-items: start; margin: 12px 0; }

@@ -499,7 +499,8 @@ body.speaking .readbtn::before { content: ""; width: 14px; height: 14px; border-
 
 /* ---------- responsive ---------- */
 @media (max-width: 1180px) {
-  .shell { grid-template-columns: 96px minmax(0, 1fr); }
+  .shell { grid-template-columns: 96px minmax(0, 1fr); grid-template-rows: auto 1fr; }
+  .side { grid-row: 1 / span 2; }
   .rail { display: none; }
   .side { padding: 22px 12px; }
   .logo > span:last-child, .sidenav span { display: none; }
@@ -522,7 +523,12 @@ body.speaking .readbtn::before { content: ""; width: 14px; height: 14px; border-
   .tabbar a img { width: 30px; height: 30px; transition: transform .25s cubic-bezier(.3, 1.6, .5, 1); }
   .tabbar a.active { background: var(--blue-l); border-color: #84d8ff; color: var(--blue-d); }
   .tabbar a.active img { transform: scale(1.12); }
-  .hello .lev.big { width: 100px; height: 100px; }
+  .hello .lev.big { width: 76px; height: 76px; }
+  .remind { padding: 12px 14px; gap: 10px; align-items: center; }
+  .remind img { width: 36px; height: 36px; }
+  .remind p { display: none; }
+  .remind .row { margin-top: 6px; flex-wrap: nowrap; }
+  .remind .btn.small { padding: 8px 12px; font-size: .78rem; }
   .unit-img { width: 64px; height: 64px; }
   .node-wrap { transform: translateX(calc(var(--x) * .7)); }
   .ward { grid-template-columns: 1fr; }
