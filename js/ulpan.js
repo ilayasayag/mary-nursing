@@ -15,8 +15,11 @@
   const bidi = t => esc(t).replace(/([\u05D0-\u05EA][\u05D0-\u05EA\s,'"״׳()+-]*[\u05D0-\u05EA)])/g, '<bdi class="he" dir="rtl">$1</bdi>');
   const sayHe = t => play([{ he: t }]);
   const U = () => { const s = S(); if (!s.ulpan) s.ulpan = {}; const u = s.ulpan;
-    for (const [k, v] of Object.entries({ xp: 0, lv: UL.profile.level, done: {}, tests: {}, box: {}, skill: {}, best: {}, talks: {}, decks: [], placed: null, exams: {} })) if (u[k] === undefined) u[k] = v;
+    for (const [k, v] of Object.entries({ xp: 0, lv: UL.profile.level, done: {}, tests: {}, box: {}, skill: {}, best: {}, talks: {}, decks: [], placed: null, exams: {}, placeHist: [] })) if (u[k] === undefined) u[k] = v;
+    /* a level test from an earlier round is discarded on every device, so a synced copy cannot bring it back */
+    if (u.placed && (u.placed.r || 1) < PLACE_ROUND) { u.placeHist = [...u.placeHist, { d: u.placed.d, lv: u.placed.lv }].slice(-5); u.placed = null; u.lv = UL.profile.level; save(); }
     return u; };
+  const PLACE_ROUND = 2; /* raise to reset the quick level test for everyone */
   const gain = n => { const u = U(); u.xp += n; touch(n); };
   const skillMark = (k, ok) => { if (!k) return; const s = U().skill; const x = s[k] || (s[k] = { n: 0, ok: 0 }); x.n++; if (ok) x.ok++; };
   const unitsOf = lv => UL.units.filter(u => u.lv === lv);
@@ -337,7 +340,7 @@
         <p>${T(`From her class test (87.5, 11.10.26) and homework: level ${lvHe(UL.profile.level)}, the end of Aleph.`, `Según su examen de clase (87,5, 11.10.26) y sus deberes: nivel ${lvHe(UL.profile.level)}, el final de Alef.`)}</p>
         <div class="two"><div><h3>💪 ${T('Strong', 'Fuerte')}</h3><ul>${UL.profile.strong.map(s => `<li>${bidi(L2(s))}</li>`).join('')}</ul></div>
         <div><h3>🎯 ${T('To work on', 'A trabajar')}</h3><ul>${UL.profile.weak.map(w => `<li>${bidi(es() ? w[2] : w[1])}</li>`).join('')}</ul></div></div>
-        <a class="btn green" href="#/uplace">${T('Take the quick level test (8 min)', 'Hacer el test rápido de nivel (8 min)')} →</a></section>` : '';
+        <a class="btn green" href="#/uplace">${T('Take the quick level test (8 min)', 'Hacer el test rápido de nivel (8 min)')} →</a></section>` : retestCard(u);
     const cta = nx ? `<a class="card ucta tilt" href="${nx.i === 'test' ? `#/utest/${nx.unit.id}` : `#/ulesson/${nx.unit.id}/${nx.i}`}">${img(nx.unit.icon, 'wiggle')}<div><small>${T('Continue', 'Continuar')} · ${lvHe(nx.unit.lv)}</small>
         <b>${nx.i === 'test' ? T('Unit test: ', 'Test de la unidad: ') + esc(L2(nx.unit.t)) : esc(L2(nx.unit.lessons[nx.i].t))}</b><span>${he(nx.unit.he)}</span></div><span class="go">→</span></a>` : '';
     const weakCard = weak.length ? `<a class="card uweak tilt" href="#/uweak">${img('target')}<div><small>${T('Fix my weak spots', 'Mejorar mis puntos débiles')}</small><b>${weak.map(k => esc(L2(UL.skills[k]))).join(' · ')}</b></div><span class="go">→</span></a>` : '';
@@ -375,12 +378,21 @@
     const cards = shuffle(ks.flatMap(k => gen(SKILL_GEN[k][0], 4, SKILL_GEN[k][1])));
     session(cards, { back: '#/ulpan', title: T('Weak spots practised', 'Puntos débiles practicados') });
   };
-  /* placement test */
+  /* placement test, open to retakes: worth it every two weeks or once most of the level is done */
+  const dm = d => d.split('-').reverse().slice(0, 2).join('.');
+  function retestCard(u) {
+    const p = levelProgress(u.lv), days = (Date.now() - new Date(u.placed.d)) / 864e5, due = days >= 14 || (p.tot && p.done / p.tot >= .8);
+    return `<section class="card uretest ${due ? 'due' : ''}">${img('trophy')}<div><small>${T('Quick level test', 'Test rápido de nivel')} · ${dm(u.placed.d)}</small>
+      <b>${T('Result', 'Resultado')}: <span class="he" lang="he">${lvHe(u.placed.lv)}</span></b>
+      <span>${due ? T('Ready for a re-test? See if you moved up.', '¿Lista para repetirlo? Mira si subiste de nivel.') : T('Retake it any time to check your level.', 'Repítelo cuando quieras para ver tu nivel.')}</span></div>
+      <a class="btn ${due ? 'green' : 'ghost'} small" href="#/uplace">${T('Retake', 'Repetir')}</a></section>`;
+  }
   R.uplace = () => {
     R.ulpan();
     const mk = (row, stage) => { const [skill, q, a, d, en, sp] = row; return { type: 'mcq', skill, sent: q, opts: shuffle([a, ...d.split(',')]), ans: a, tr: es() ? sp : en, stage }; };
     const stages = { a: UL.placeRows.a.map(r => mk(r, 'a')), ap: UL.placeRows.ap.map(r => mk(r, 'ap')), b: UL.placeRows.b.map(r => mk(r, 'b')) };
-    const intro = { type: 'teach', t: { k: 'text', en: '28 quick questions in three steps (Aleph, Aleph+, Bet). No hints and no hearts: answer what you know. It stops early when a step is too hard.', es: '28 preguntas rápidas en tres pasos (Alef, Alef+, Bet). Sin pistas ni corazones: responde lo que sepas. Se detiene antes si un paso es demasiado difícil.' } };
+    const last = U().placed, again = last ? { en: ` Last time (${dm(last.d)}) you placed at ${lvHe(last.lv)}.`, es: ` La última vez (${dm(last.d)}) quedaste en ${lvHe(last.lv)}.` } : { en: '', es: '' };
+    const intro = { type: 'teach', t: { k: 'text', en: '28 quick questions in three steps (Aleph, Aleph+, Bet). No hints and no hearts: answer what you know. It stops early when a step is too hard.' + again.en, es: '28 preguntas rápidas en tres pasos (Alef, Alef+, Bet). Sin pistas ni corazones: responde lo que sepas. Se detiene antes si un paso es demasiado difícil.' + again.es } };
     session([intro, ...stages.a, { type: 'gate', stage: 'a' }], { silent: true, hearts: false, retry: false, back: '#/ulpan', title: T('Level test done', 'Test de nivel terminado'), stages });
   };
   /* gate cards make the placement adaptive: continue to the next stage only if this one went well */
@@ -389,8 +401,12 @@
     if (ok >= need && nextSt) { X.cards.splice(X.i + 1, 0, ...X.stages[nextSt], { type: 'gate', stage: nextSt }); X.i++; return draw(); }
     const lv = st === 'a' ? 'a' : st === 'ap' ? 'a+' : 'b';
     const sk = {}; X.log.forEach(r => { if (!r.c.skill || !r.c.stage) return; const x = sk[r.c.skill] || (sk[r.c.skill] = [0, 0]); x[1]++; if (r.ok) x[0]++; });
-    U().placed = { d: new Date().toISOString().slice(0, 10), lv, sk }; U().lv = lv; save();
-    X.extra = () => `<div class="uplaced"><p>${T('Your starting level', 'Tu nivel inicial')}: <b class="he" lang="he">${lvHe(lv)}</b></p><div class="skillbars">${Object.entries(sk).map(([k, [o, n]]) =>
+    const u = U(), prev = u.placed || u.placeHist[u.placeHist.length - 1], order = ['a', 'a+', 'b'];
+    if (u.placed) u.placeHist = [...u.placeHist, { d: u.placed.d, lv: u.placed.lv }].slice(-5);
+    u.placed = { d: new Date().toISOString().slice(0, 10), lv, sk, r: PLACE_ROUND }; u.lv = lv; save();
+    const moved = !prev ? '' : order.indexOf(lv) > order.indexOf(prev.lv) ? T(`Up from ${lvHe(prev.lv)} last time. Well done!`, `¡Subiste desde ${lvHe(prev.lv)}! Muy bien.`)
+      : lv === prev.lv ? T(`Same as last time (${dm(prev.d)}).`, `Igual que la última vez (${dm(prev.d)}).`) : T(`Last time: ${lvHe(prev.lv)} (${dm(prev.d)}).`, `La última vez: ${lvHe(prev.lv)} (${dm(prev.d)}).`);
+    X.extra = () => `<div class="uplaced"><p>${T('Your level', 'Tu nivel')}: <b class="he" lang="he">${lvHe(lv)}</b></p>${moved ? `<p class="umoved">${bidi(moved)}</p>` : ''}<div class="skillbars">${Object.entries(sk).map(([k, [o, n]]) =>
       `<div><span>${esc(L2(UL.skills[k] || [k, k]))}</span><div class="mbar-mini"><i style="width:${100 * o / n}%"></i></div><small>${o}/${n}</small></div>`).join('')}</div></div>`;
     X.i = X.cards.length; return finish();
   }

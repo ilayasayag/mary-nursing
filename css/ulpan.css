@@ -28,6 +28,12 @@
 .ucta img, .uweak img { width: 54px; height: 54px; flex: none; }
 .ucta small, .uweak small { display: block; text-transform: uppercase; letter-spacing: .06em; font-size: .72rem; opacity: .9; }
 .ucta b, .uweak b { display: block; font: 600 1.1rem var(--display); } .ucta .go, .uweak .go { margin-left: auto; font: 700 1.6rem var(--display); }
+.uretest { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin: 12px 0; }
+.uretest img { width: 40px; height: 40px; flex: none; } .uretest > div { flex: 1; min-width: 0; }
+.uretest small { display: block; text-transform: uppercase; letter-spacing: .06em; font-size: .7rem; color: var(--muted); font-weight: 800; }
+.uretest b { display: block; } .uretest b .he { color: var(--ul-d); font-size: 1.15rem; } .uretest span:not(.he) { display: block; font-size: .85rem; color: var(--muted); }
+.uretest.due { border-color: var(--ul); background: linear-gradient(135deg, var(--ul-l, var(--soft)), var(--surface)); }
+.umoved { color: var(--ul-d); }
 .ulevel { margin: 22px 0; } .ulevel.soon { opacity: .75; }
 .ulevel-h { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .ulevel-h > b { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; font-size: 1.6rem; background: var(--soft); border: 2px solid var(--line); }
