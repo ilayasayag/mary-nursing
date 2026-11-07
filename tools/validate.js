@@ -14,7 +14,7 @@ const err = (where, msg) => errors.push(`${where}: ${msg}`);
 const warn = (where, msg) => warnings.push(`${where}: ${msg}`);
 const filled = x => typeof x === 'string' && x.trim().length > 0;
 const pair = (where, x, what) => { if (!Array.isArray(x) || !filled(x[0]) || !filled(x[1])) err(where, `${what} needs [en, es]`); };
-const imgOk = (where, n) => { if (!fs.existsSync(path.join(root, 'img', n + '.png'))) err(where, `missing image img/${n}.png`); };
+const imgOk = (where, n) => { if (!fs.existsSync(path.join(root, 'img', n + '.webp'))) err(where, `missing image img/${n}.webp`); };
 
 /* questions */
 const ids = new Set(), stems = new Map();

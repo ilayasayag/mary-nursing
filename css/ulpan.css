@@ -145,6 +145,11 @@
 .wc { display: grid; padding: 6px 10px; border-radius: 12px; border: 2px solid var(--line); cursor: pointer; text-align: center; } .wc .he { font-size: 1.1rem; font-weight: 700; } .wc small { font-size: .7rem; color: var(--muted); direction: ltr; }
 .wc.known { border-color: var(--ul); } .wc.verb { border-color: var(--coral); background: var(--coral-l); } .wc.new { border-style: dashed; }
 .uplaced { margin: 10px 0; } .uplaced p { font-weight: 800; } .uplaced .he { font-size: 1.6rem; color: var(--ul-d); }
+.ugroups { display: grid; gap: 10px; text-align: left; margin-top: 8px; } .ugroups h3 { margin: 0 0 6px; font-size: 1rem; }
+.uchips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; font-weight: 700 !important; }
+.uchips span { padding: 5px 10px; border-radius: 99px; font-size: .85rem; background: var(--coral-l); color: var(--ink); border: 2px solid var(--coral); }
+.uchips.ok span { background: var(--ul-l); border-color: var(--ul); }
+.uchips small { color: var(--muted); font-weight: 800; } .uchips .he { font-size: inherit !important; color: inherit !important; }
 @media (max-width: 720px) {
   .uhead { grid-template-columns: auto 1fr; } .uxp { display: none; } .ubadge { width: 60px; height: 60px; } .uhead h1 { font-size: 1.15rem; }
   .uprofile .two { grid-template-columns: 1fr; } .he-sent { font-size: 1.25rem; } .uprompt { font-size: 1.6rem; }

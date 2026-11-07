@@ -263,7 +263,7 @@
     gain(ok ? 2 : 0); save();
   }
   A.uAfter = () => { if (X.hearts !== null && X.hearts <= 0) return outOfHearts(); X.i++; draw(); };
-  function outOfHearts() { SFX.no(); $('#overlay').innerHTML = `<div class="sess center"><div class="end pop">${mascot('sad', 'big')}<h1>${T('Out of hearts', 'Sin corazones')}</h1><p>${T('Mistakes are how you learn. Try the lesson again.', 'Los errores enseñan. Repite la lección.')}</p>
+  function outOfHearts() { SFX.no(); $('#overlay').scrollTop = 0; $('#overlay').innerHTML = `<div class="sess center"><div class="end pop">${mascot('sad', 'big')}<h1>${T('Out of hearts', 'Sin corazones')}</h1><p>${T('Mistakes are how you learn. Try the lesson again.', 'Los errores enseñan. Repite la lección.')}</p>
     <div class="row"><button class="btn green" onclick="A.uRestart()">${T('Try again', 'Repetir')}</button><button class="btn ghost" onclick="A.uQuit()">${T('Quit', 'Salir')}</button></div></div></div>`; }
   A.uRestart = () => { const o = X.restart; closeU(); if (o) o(); };
   A.uPair = el => {
@@ -296,7 +296,7 @@
     if (X.onEnd) X.onEnd(acc);
     save(); SFX.win(); if (acc >= 80) confetti();
     const by = {}; X.log.forEach(r => { if (!r.c.skill) return; const b = by[r.c.skill] || (by[r.c.skill] = { ok: 0, n: 0 }); b.n++; if (r.ok) b.ok++; });
-    $('#overlay').innerHTML = `<div class="sess center"><div class="end">${mascot(acc >= 60 ? 'happy' : 'sad', 'big jump')}<h1 class="pop">${X.title || T('Lesson complete!', '¡Lección completada!')}</h1>
+    $('#overlay').scrollTop = 0; $('#overlay').innerHTML = `<div class="sess center"><div class="end">${mascot(X.happy || acc >= 60 ? 'happy' : 'sad', 'big jump')}<h1 class="pop">${X.title || T('Lesson complete!', '¡Lección completada!')}</h1>
       <div class="end-stats"><div class="es gold"><small>XP</small><b data-c="${xp}">0</b></div><div class="es green"><small>${T('Accuracy', 'Precisión')}</small><b data-c="${acc}" data-suffix="%">0</b></div>
       <div class="es blue"><small>${T('Time', 'Tiempo')}</small><b>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</b></div></div>
       ${X.extra ? X.extra(by) : ''}<button class="btn green wide" onclick="A.uDone()">${T('Continue', 'Continuar')}</button></div></div>`;
@@ -395,6 +395,11 @@
     const intro = { type: 'teach', t: { k: 'text', en: '28 quick questions in three steps (Aleph, Aleph+, Bet). No hints and no hearts: answer what you know. It stops early when a step is too hard.' + again.en, es: '28 preguntas rápidas en tres pasos (Alef, Alef+, Bet). Sin pistas ni corazones: responde lo que sepas. Se detiene antes si un paso es demasiado difícil.' + again.es } };
     session([intro, ...stages.a, { type: 'gate', stage: 'a' }], { silent: true, hearts: false, retry: false, back: '#/ulpan', title: T('Level test done', 'Test de nivel terminado'), stages });
   };
+  /* the result as two short lists instead of one bar per skill, so it fits a phone screen */
+  const skillGroups = sk => { const name = k => bidi(L2(UL.skills[k] || [k, k])), all = Object.entries(sk);
+    const good = all.filter(([, [o, n]]) => o === n), work = all.filter(([, [o, n]]) => o < n);
+    return `<div class="ugroups">${good.length ? `<div><h3>💪 ${T('Strong', 'Fuerte')}</h3><p class="uchips ok">${good.map(([k]) => `<span>${name(k)}</span>`).join('')}</p></div>` : ''}
+      ${work.length ? `<div><h3>🎯 ${T('To practise', 'A practicar')}</h3><p class="uchips">${work.map(([k, [o, n]]) => `<span>${name(k)} <small>${o}/${n}</small></span>`).join('')}</p></div>` : ''}</div>`; };
   /* gate cards make the placement adaptive: continue to the next stage only if this one went well */
   function gate(c) {
     const st = c.stage, items = X.log.filter(r => r.c.stage === st), ok = items.filter(r => r.ok).length, need = { a: 6, ap: 8, b: 5 }[st], nextSt = { a: 'ap', ap: 'b' }[st];
@@ -406,9 +411,8 @@
     u.placed = { d: new Date().toISOString().slice(0, 10), lv, sk, r: PLACE_ROUND }; u.lv = lv; save();
     const moved = !prev ? '' : order.indexOf(lv) > order.indexOf(prev.lv) ? T(`Up from ${lvHe(prev.lv)} last time. Well done!`, `¡Subiste desde ${lvHe(prev.lv)}! Muy bien.`)
       : lv === prev.lv ? T(`Same as last time (${dm(prev.d)}).`, `Igual que la última vez (${dm(prev.d)}).`) : T(`Last time: ${lvHe(prev.lv)} (${dm(prev.d)}).`, `La última vez: ${lvHe(prev.lv)} (${dm(prev.d)}).`);
-    X.extra = () => `<div class="uplaced"><p>${T('Your level', 'Tu nivel')}: <b class="he" lang="he">${lvHe(lv)}</b></p>${moved ? `<p class="umoved">${bidi(moved)}</p>` : ''}<div class="skillbars">${Object.entries(sk).map(([k, [o, n]]) =>
-      `<div><span>${esc(L2(UL.skills[k] || [k, k]))}</span><div class="mbar-mini"><i style="width:${100 * o / n}%"></i></div><small>${o}/${n}</small></div>`).join('')}</div></div>`;
-    X.i = X.cards.length; return finish();
+    X.extra = () => `<div class="uplaced"><p>${T('Your level', 'Tu nivel')}: <b class="he" lang="he">${lvHe(lv)}</b></p>${moved ? `<p class="umoved">${bidi(moved)}</p>` : ''}${skillGroups(sk)}</div>`;
+    X.happy = true; X.i = X.cards.length; return finish();
   }
 
   /* ===================== games ===================== */

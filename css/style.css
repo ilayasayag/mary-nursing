@@ -159,9 +159,11 @@ main.wide { max-width: 1040px; }
 .start-bubble::after { content: ""; position: absolute; left: 50%; top: 100%; width: 12px; height: 12px; background: var(--surface); border-right: 2px solid var(--line); border-bottom: 2px solid var(--line); transform: translate(-50%, -6px) rotate(45deg); }
 
 /* ---------- session overlay ---------- */
-#overlay { position: fixed; inset: 0; z-index: 100; background: var(--bg); }
+#overlay { position: fixed; inset: 0; z-index: 100; background: var(--bg); overflow-y: auto; overflow-anchor: none; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .sess { height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
-.sess.center { place-items: center; grid-template-rows: 1fr; padding: 20px; }
+/* result screens grow past the screen and scroll inside the overlay; Continue stays pinned to the bottom */
+.sess.center { height: auto; min-height: 100%; place-items: center; grid-template-rows: 1fr; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); }
+.end > .btn:last-child { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 2; box-shadow: 0 5px 0 var(--s), 0 10px 24px rgba(0, 0, 0, .25); }
 .sess-top { display: flex; align-items: center; gap: 18px; width: 100%; max-width: 1000px; margin: 0 auto; padding: 28px 20px 10px; }
 .x { border: 0; background: none; font-size: 1.6rem; color: var(--line2); cursor: pointer; padding: 4px 8px; border-radius: 10px; }
 .x:hover { color: var(--muted); background: var(--soft); }

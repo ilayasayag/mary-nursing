@@ -9,7 +9,7 @@
   const pick = a => a[Math.random() * a.length | 0];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const today = () => new Date().toISOString().slice(0, 10);
-  const img = (n, c = '') => `<img src="img/${n}.png" alt="" class="${c}" draggable="false">`;
+  const img = (n, c = '') => `<img src="img/${n}.webp" alt="" class="${c}" draggable="false" loading="lazy" decoding="async">`;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const UNIT_COLORS = ['#58cc02', '#1cb0f6', '#ce82ff', '#ff9600', '#ff4b4b', '#00cd9c', '#ff86d0', '#2b70c9', '#ffc800', '#7c5cff'];
 
@@ -524,7 +524,7 @@
   }
   function outOfHearts() {
     SFX.no();
-    $('#overlay').innerHTML = `<div class="sess center"><div class="end pop">${mascot('sad', 'big')}<h1>${t('outHearts')}</h1><p>${t('outHeartsD')}</p>
+    $('#overlay').scrollTop = 0; $('#overlay').innerHTML = `<div class="sess center"><div class="end pop">${mascot('sad', 'big')}<h1>${t('outHearts')}</h1><p>${t('outHeartsD')}</p>
       <div class="row"><button class="btn green" onclick="A.retrySession()">${t('retry')}</button><button class="btn ghost" onclick="A.closeTo('#/')">${t('quit')}</button></div></div></div>`;
   }
   function endSession() {
@@ -538,7 +538,7 @@
       const by = {}; X.log.forEach(r => { const b = by[r.m] || (by[r.m] = { ok: 0, n: 0 }); b.n++; if (r.ok) b.ok++; });
       extra = `<div class="topics">${Object.entries(by).map(([m, b]) => `<div>${img(m)}<span>${L(modById(m).title)}</span><div class="mbar-mini"><i style="width:${100 * b.ok / b.n}%"></i></div><small>${b.ok}/${b.n}</small></div>`).join('')}</div>`;
     }
-    $('#overlay').innerHTML = `<div class="sess center"><div class="end">
+    $('#overlay').scrollTop = 0; $('#overlay').innerHTML = `<div class="sess center"><div class="end">
       ${mascot('happy', 'big jump')}<h1 class="pop">${X.timeUp ? t('timeUp') : X.doneTitle || t('lessonDone')}</h1>
       <div class="end-stats">
         <div class="es gold"><small>${t('totalXp')}</small><b data-c="${xp}">0</b></div>
