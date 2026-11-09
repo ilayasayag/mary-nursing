@@ -913,6 +913,7 @@
         <div class="card">${img('heb')}<b>${Object.values(S.box).filter(b => b >= 4).length}</b><small>עברית</small></div>
       </div>
       <h2>${t('badges')}</h2><div class="badge-grid">${BADGES.map(b => `<div class="badge ${S.badges.includes(b[0]) ? 'on' : ''}">${img(b[1])}<small>${esc(L2([b[2], b[3]]))}</small></div>`).join('')}</div>
+      <div id="visitbox"></div>
       <h2>${img('check')} ${t('saveTitle')}</h2><section class="card settings" id="cloudbox">${cloudBox()}</section>
       <h2>${t('settings')}</h2><section class="card settings">
         <label>${t('name')} <input value="${esc(S.name)}" maxlength="24" onchange="A.setName(this.value)"></label>
@@ -925,6 +926,7 @@
         ${voicePicker()}
         <button class="btn red small" onclick="A.reset()">${t('reset')}</button></section>
       <p class="fine">${t('disclaimer')} · 3D images: Microsoft Fluent Emoji (MIT).</p>`);
+    refreshVisitors();
   };
 
   /* ---------- saving progress: backup file + optional cloud sync (Firebase, configured in js/cloud-config.js) ---------- */
@@ -1039,8 +1041,9 @@
       A_.getRedirectResult(auth).catch(e => { cloud.err = authError(e); refreshCloudBox(); });
       A_.onAuthStateChanged(auth, async user => {
         cloud.user = user; afterSave = user ? schedulePush : null;
+        recordVisit(user);
         if (user) await cloudPull();
-        refreshCloudBox();
+        refreshCloudBox(); refreshVisitors();
       });
     } catch (e) { cloud.err = authError(e); refreshCloudBox(); }
   }
@@ -1053,6 +1056,35 @@
     return String((e && (e.code || e.message)) || e);
   };
   const progressDoc = () => cloud.F_.doc(cloud.db, 'progress', cloud.user.uid);
+  /* anonymous visitor count: one random id per device, written at most once a day (no name, email or progress) */
+  const OWNER_UID = 'vCHW3lXeviPKe9RGsL6VWftWKKW2';
+  function recordVisit(user) {
+    if (!location.hostname.endsWith('.github.io')) return;
+    try {
+      const v = JSON.parse(localStorage.getItem('lev.visit') || '{}'), d = today();
+      const who = user ? (user.uid === OWNER_UID ? 'owner' : 'user') : v.who || 'guest';
+      if (v.id && v.last === d && v.who === who) return;
+      const next = { id: v.id || [...crypto.getRandomValues(new Uint8Array(10))].map(b => b.toString(16).padStart(2, '0')).join(''), first: v.first || d, last: d, who };
+      localStorage.setItem('lev.visit', JSON.stringify(next));
+      cloud.F_.setDoc(cloud.F_.doc(cloud.db, 'visits', next.id), { first: next.first, last: next.last, who }).catch(() => { /* not counted today */ });
+    } catch (e) { /* storage blocked: skip it, or the same phone would count as new every time */ }
+  }
+  /* owner-only monitor on the Profile page; the owner's own devices are left out of the numbers */
+  function visitorsCard(all) {
+    const rows = all.filter(r => r.who !== 'owner'), dayAgo = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10), days = [...Array(7).keys()].map(dayAgo);
+    const newOn = d => rows.filter(r => r.first === d).length, top = Math.max(1, ...days.map(newOn));
+    const tile = (c, label, n) => `<div class="es ${c}"><small>${label}</small><b>${n}</b></div>`;
+    return `<h2>${img('target')} Visitors</h2><section class="card"><div class="end-stats visit-stats">
+        ${tile('gold', 'Unique', rows.length)}${tile('green', 'Guests', rows.filter(r => r.who === 'guest').length)}${tile('blue', 'Signed in', rows.filter(r => r.who === 'user').length)}
+        ${tile('gold', 'New today', newOn(days[0]))}${tile('green', 'Active today', rows.filter(r => r.last === days[0]).length)}${tile('blue', 'Active 7 days', rows.filter(r => r.last >= days[6]).length)}</div>
+      <h3>New visitors, last 7 days</h3><div class="skillbars">${days.map(d => `<div><span>${d.slice(8)}.${d.slice(5, 7)}</span><div class="mbar-mini"><i style="width:${100 * newOn(d) / top}%"></i></div><small>${newOn(d)}</small></div>`).join('')}</div>
+      <p class="fine">Each phone or browser counts once. Your own devices are left out once you have signed in on them.</p></section>`;
+  }
+  async function refreshVisitors() {
+    const b = $('#visitbox'); if (!b || !cloud.user || cloud.user.uid !== OWNER_UID) return;
+    try { b.innerHTML = visitorsCard((await cloud.F_.getDocs(cloud.F_.collection(cloud.db, 'visits'))).docs.map(x => x.data())); }
+    catch (e) { b.innerHTML = `<p class="fine">Visitors could not load: ${esc(e.code || e.message || e)}</p>`; }
+  }
   async function cloudPull() {
     try {
       cloud.busy = true; refreshCloudBox();

@@ -5,5 +5,15 @@ service cloud.firestore {
     match /progress/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+    // Anonymous visitor count: one record per device with only two dates and a role. Only the owner can read them.
+    match /visits/{id} {
+      allow create, update: if id.matches('^[0-9a-f]{20}$')
+        && request.resource.data.keys().hasOnly(['first', 'last', 'who'])
+        && request.resource.data.keys().hasAll(['first', 'last', 'who'])
+        && request.resource.data.first.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.last.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.who in ['guest', 'user', 'owner'];
+      allow read: if request.auth != null && request.auth.uid == 'vCHW3lXeviPKe9RGsL6VWftWKKW2';
+    }
   }
 }

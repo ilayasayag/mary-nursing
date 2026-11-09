@@ -230,6 +230,7 @@ main.wide { max-width: 1040px; }
 .end { display: grid; justify-items: center; text-align: center; gap: 10px; width: 100%; max-width: 520px; }
 .end h1 { color: var(--gold-d); font-size: 2rem; }
 .end-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; margin: 10px 0 20px; }
+.visit-stats { margin: 0 0 14px; text-align: center; }
 .es { border: 2px solid; border-radius: 16px; overflow: hidden; animation: pop .5s both; }
 .es:nth-child(2) { animation-delay: .15s; } .es:nth-child(3) { animation-delay: .3s; }
 .es small { display: block; color: #fff; font-weight: 900; text-transform: uppercase; font-size: .72rem; letter-spacing: .06em; padding: 4px; }
