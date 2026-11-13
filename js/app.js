@@ -373,6 +373,10 @@
           }).join('')}</div>${unitExtra[m.id] ? unitExtra[m.id]() : ''}
         </section>`;
       }).join('')}`);
+    /* open on the unit she is working on (or the last core unit when all are done), not the top of the path */
+    const units = document.querySelectorAll('#app .unit'), at = nx ? NX.modules.findIndex(m => m.id === nx[0]) : NX.modules.filter(m => !m.extra).length - 1;
+    const unit = units[at], bar = $('#mbar');
+    if (unit && at > 0) requestAnimationFrame(() => window.scrollTo({ top: unit.getBoundingClientRect().top + window.scrollY - (bar && bar.offsetHeight ? bar.offsetHeight : 0) - 12, behavior: 'instant' }));
   };
 
   /* ---------- question builders ---------- */
@@ -1150,6 +1154,7 @@
     (R[page] || R.learn)(a, b);
     chrome();
   }
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; /* each page sets its own scroll (Learn opens on her current unit) */
   window.addEventListener('hashchange', () => { if (X && !$('#overlay').hidden) closeSession(); route(); });
   document.addEventListener('click', e => {
     const s = e.target.closest('[data-say]'); if (s && !s.classList.contains('ptile')) speak(s.dataset.say);
