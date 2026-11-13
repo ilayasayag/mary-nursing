@@ -7,7 +7,7 @@ window.NX = {
   addModule(m) {
     const mod = {
       id: m.id, icon: m.icon, title: { en: m.t[0], es: m.t[1] },
-      blurb: { en: m.b[0], es: m.b[1] }, exam: m.exam || '', lessons: []
+      blurb: { en: m.b[0], es: m.b[1] }, exam: m.exam || '', extra: !!m.extra, lessons: []
     };
     m.lessons.forEach((l, li) => {
       const v = (l.v || []).map((x, i) => ({

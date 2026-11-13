@@ -1,5 +1,5 @@
 /* Content for the exam games. Rules checked against Brunner & Suddarth 16th (Google Books search),
-   AHA 2020 and the MOH circulars on Mary's reading list. */
+   AHA 2025 BLS and the MOH circulars on Mary's reading list. */
 
 /* ---------- Triage Rush: tap the 4 patients in the order you would see them ----------
    p: [name, image, complaint [en, es], vitals]   order: indexes from first to last   why: [en, es] */

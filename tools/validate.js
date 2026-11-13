@@ -92,9 +92,11 @@ for (const st of S) {
   if (st.sbar && !SB.some(p => p.id === st.sbar)) err(w, `unknown SBAR case ${st.sbar}`);
   if (st.teach && !T.some(p => p.id === st.teach)) err(w, `unknown teaching case ${st.teach}`);
   (st.calc || []).forEach(id => { if (!C.some(c => c.id === id)) err(w, `unknown calc ${id}`); });
-  if (!['acute', 'med', 'comm', 'teach', 'proc', 'sbar'].includes(st.kind)) err(w, `unknown kind ${st.kind}`);
-  if (st.kind === 'acute' && !st.sim) err(w, 'acute station needs a sim');
-  if (['med', 'comm'].includes(st.kind) && !(st.steps || []).length) err(w, 'needs steps');
+  if (!['acute', 'med', 'comm', 'teach', 'actor', 'proc', 'sbar'].includes(st.kind)) err(w, `unknown kind ${st.kind}`);
+  if (st.kind === 'acute' && !st.sim && !(st.steps || []).length) err(w, 'acute station needs a sim or its own steps');
+  if (['med', 'comm', 'actor'].includes(st.kind) && !(st.steps || []).length) err(w, 'needs steps');
+  if (['teach', 'actor'].includes(st.kind) && !st.teach) err(w, 'needs a teaching case');
+  (st.steps || []).forEach((x, k) => { if (!x.calc && (!x.v || x.v.hr === undefined)) err(`${w} step ${k}`, 'monitor values missing'); });
   if (!(st.dq || []).length && st.kind !== 'proc') warn(w, 'no debrief questions');
   (st.steps || []).forEach((x, k) => {
     if (x.calc) { if (!C.some(c => c.id === x.calc)) err(`${w} step ${k}`, `unknown calc ${x.calc}`); return; }
@@ -140,6 +142,12 @@ for (const st of S) {
 }
 for (const c of T) both(`teach ${c.id} teach-back`, c.back, c.back.findIndex(b => b[0] === 2));
 
+/* mock tests and cheat sheets */
+for (const m of NX.mocks || []) { pair(`mock ${m.id}`, m.t, 'title'); if (m.st.length !== 4) err(`mock ${m.id}`, 'needs 4 stations'); m.st.forEach(id => { if (!S.some(s => s.id === id)) err(`mock ${m.id}`, `unknown station ${id}`); }); }
+(NX.mockSlots || []).forEach((sl, i) => { imgOk(`mock slot ${i}`, sl.icon); sl.ids.forEach(id => { if (!S.some(s => s.id === id)) err(`mock slot ${i}`, `unknown station ${id}`); }); });
+(NX.mocks || []).filter(m => !m.focus).forEach(m => m.st.forEach((id, i) => { if (!NX.mockSlots[i].ids.includes(id)) err(`mock ${m.id}`, `${id} is not a station for slot ${i + 1}`); }));
+for (const c of NX.cheats || []) { imgOk(`cheat ${c.id}`, c.img); pair(`cheat ${c.id}`, c.t, 'title'); c.rows.forEach((r, k) => { if (r.length !== 4 || !filled(r[0]) || !filled(r[2]) || filled(r[1]) !== filled(r[3])) err(`cheat ${c.id} row ${k}`, 'needs [en, valueEn, es, valueEs]'); }); }
+(NX.cheatsHe || []).forEach((h, k) => { if (h.length !== 4 || h.some(x => !filled(x))) err(`cheat he ${k}`, 'needs [he, translit, en, es]'); });
 /* Ulpan course */
 const UL = window.UL;
 if (UL) {

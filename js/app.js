@@ -308,7 +308,7 @@
   function stat(m, ok) { const s = S.stats[m] || (S.stats[m] = { ok: 0, n: 0 }); s.n++; if (ok) s.ok++; S.answered++; }
   const nodeKey = (m, i) => `${m}-${i}`;
   function nextNode() {
-    for (const m of NX.modules) { for (let i = 0; i < m.lessons.length; i++) if (!S.done[nodeKey(m.id, i)]) return [m.id, i]; if (!S.done[nodeKey(m.id, 'q')]) return [m.id, 'q']; }
+    for (const m of NX.modules) { if (m.extra) continue; for (let i = 0; i < m.lessons.length; i++) if (!S.done[nodeKey(m.id, i)]) return [m.id, i]; if (!S.done[nodeKey(m.id, 'q')]) return [m.id, 'q']; }
     return null;
   }
 
@@ -361,7 +361,7 @@
         const col = UNIT_COLORS[u % UNIT_COLORS.length];
         const nodes = m.lessons.map((l, i) => ({ k: i, title: L(l.t) })).concat([{ k: 'q', title: t('unitQuiz') }]);
         return `<section class="unit" style="--u:${col}">
-          <header class="unit-head"><div><small>${t('unit')} ${u + 1}</small><h2>${L(m.title)}</h2><p>${L(m.blurb)}</p></div>${img(m.id, 'unit-img float')}</header>
+          <header class="unit-head"><div><small>${t('unit')} ${u + 1}${m.extra ? ` · <span class="bonus-chip">${S.lang === 'es' ? 'extra · no cuenta en el progreso' : 'bonus · not counted in progress'}</span>` : ''}</small><h2>${L(m.title)}</h2><p>${L(m.blurb)}</p></div>${img(m.id, 'unit-img float')}</header>
           <div class="path">${nodes.map((nd, j) => {
             const key = nodeKey(m.id, nd.k), done = !!S.done[key], cur = nx && nx[0] === m.id && nx[1] === nd.k;
             const off = Math.round(Math.sin((n++) * 0.95) * 72);
@@ -370,7 +370,7 @@
               ${cur ? `<span class="start-bubble">${t('start')}</span>` : ''}
               <a href="#/${nd.k === 'q' ? 'quiz/' + m.id : 'lesson/' + m.id + '/' + nd.k}" class="node ${done ? 'done' : ''} ${cur ? 'cur' : ''} ${!done && !cur ? 'todo' : ''} ${nd.k === 'q' ? 'quiz' : ''}" data-tip="${esc(nd.title)}" aria-label="${esc(nd.title)}">${img(icon)}</a>
             </div>`;
-          }).join('')}</div>
+          }).join('')}</div>${unitExtra[m.id] ? unitExtra[m.id]() : ''}
         </section>`;
       }).join('')}`);
   };
@@ -394,7 +394,8 @@
   const SEARCHED = { medsurg: true, peds: true };
   const SOURCE = new Proxy({}, { get: (_, m) =>
     m === 'law' ? (S.lang === 'es' ? 'Leyes israelíes y circulares del Ministerio · verificado con los textos oficiales' : 'Israeli laws and Ministry circulars · checked against the official texts')
-    : m === 'emerg' ? (S.lang === 'es' ? 'AHA 2020 SVB adulto y primeros auxilios · verificado con la guía' : 'AHA 2020 Adult BLS and First Aid · checked against the guideline')
+    : m === 'emerg' ? (S.lang === 'es' ? 'SVB AHA 2025 · primeros auxilios AHA/Cruz Roja (texto 2020; la bibliografía cita ya la actualización de 2024) · verificado con las guías' : 'AHA 2025 BLS · AHA/Red Cross first aid (2020 text; the list now cites the 2024 update) · checked against the guidelines')
+    : m === 'exam' ? (S.lang === 'es' ? 'Sesión informativa del Ministerio de Sanidad (24.10.2026), bibliografía sept-dic 2026 y guía AHA 2025' : 'Ministry of Health briefing (24.10.2026), the Sept-Dec 2026 reading list and the AHA 2025 guideline')
     /* Brunner & Suddarth 16th and Wong's 12th are searchable in Google Books; key facts were checked in their text */
     : SEARCHED[m] ? (S.lang === 'es' ? `${BOOK[m]} · datos clave verificados en el texto del libro (búsqueda de Google Books)` : `${BOOK[m]} · key facts checked in the book's text (Google Books search)`)
     : BOOK[m] ? (S.lang === 'es' ? `Tema de ${BOOK[m]} · verificado con referencias abiertas (el libro no permite búsqueda)` : `Topic from ${BOOK[m]} · checked against open references (the book is not searchable online)`)
@@ -846,15 +847,17 @@
     '2026-11-11': ['st:a-psy', 'st:c-angry', 'st:t-warf', 'vitals'],
     '2026-11-12': ['examday', 'review'],
     '2026-11-13': ['weak', 'weak', 'st:p-dressing', 'st:t-hf'],
-    '2026-11-14': ['st:m-k', 'st:s-copd', 'calc', 'triage'],
-    '2026-11-15': ['redlines', 'procs', 'mock'],
-    '2026-11-16': ['examday', 'weak'],
-    '2026-11-17': ['examinfo', 'redlines', 'rest']
+    '2026-11-14': ['exam', 'mx:1', 'calc'],
+    '2026-11-15': ['mx:2', 'weak', 'redlines'],
+    '2026-11-16': ['mx:4', 'procs'],
+    '2026-11-17': ['cheats', 'examinfo', 'rest']
   };
   /* Learn page banner: today's station practice from the plan */
   function todayStations() {
-    const es = S.lang === 'es', tasks = (PLAN2[today()] || []).filter(k => k.startsWith('st:') || k === 'examday' || k === 'weak');
+    const es = S.lang === 'es', tasks = (PLAN2[today()] || []).filter(k => k.startsWith('st:') || k.startsWith('mx:') || k === 'examday' || k === 'weak');
     const first = tasks[0], st = first && first.startsWith('st:') ? NX.stations.find(x => x.id === first.slice(3)) : null;
+    const mk = first && first.startsWith('mx:') ? NX.mocks.find(x => x.id === +first.slice(3)) : null;
+    if (mk) return `<a class="sim-cta tilt" href="#/mocktest/${mk.id}">${img('trophy', 'wiggle')}<div><b>${L2(mk.t)}</b><span>${es ? 'Práctica de hoy · 5 estaciones, el formato real' : 'Today’s exam practice · 5 stations, the real format'}</span></div><span class="go">→</span></a>`;
     const href = first === 'examday' ? '#/examday' : first === 'weak' ? '#/station/weak' : st ? `#/station/${st.id}` : '#/stations';
     const title = first === 'examday' ? (es ? 'Ensayo del día de examen' : 'Exam day rehearsal') : first === 'weak' ? (es ? 'Tu estación más débil' : 'Your weakest station') : st ? L2(st.t) : (es ? 'Practica una estación de MSR' : 'Practise an MSR station');
     const passed = NX.stations.filter(x => (S.stations[x.id] || {}).pass).length;
@@ -869,6 +872,8 @@
     const taskHtml = task => {
       const [kind, a] = task;
       if (kind.startsWith('st:')) { const st = NX.stations.find(x => x.id === kind.slice(3)); return st ? `<a href="#/station/${st.id}">${img(st.img)} ${L2(st.t)} <small>${st.mins}′</small></a>` : ''; }
+      if (kind.startsWith('mx:')) { const mk = NX.mocks.find(x => x.id === +kind.slice(3)); return `<a class="big-task" href="#/mocktest/${mk.id}">${img('trophy')} ${L2(mk.t)}: ${T2('5 stations, the real format', '5 estaciones, el formato real')}</a>`; }
+      if (kind === 'cheats') return `<a href="#/cheats">${img('bulb')} ${T2('Cheat sheets: a calm last look', 'Chuletas: un último repaso tranquilo')}</a>`;
       if (kind === 'examday') return `<a class="big-task" href="#/examday">${img('trophy')} ${T2('Exam day rehearsal: 6 stations', 'Ensayo del día de examen: 6 estaciones')}</a>`;
       if (kind === 'weak') return `<a href="#/station/weak">${img('target')} ${T2('Your weakest station', 'Tu estación más débil')}</a>`;
       if (kind === 'calc') return `<a href="#/calc">${img('calc')} ${T2('Bedside calculations', 'Cálculos a pie de cama')}</a>`;
@@ -888,7 +893,7 @@
       const m = modById(kind); return `<a href="#/">${img(m.id)} ${L(m.title)}</a>`;
     };
     view(`<section class="page-head">${img('calendar', 'head-img float')}<div><h1>${t('planTitle')}</h1><p>${t('planD')}</p></div></section>
-      <p class="plan-note">${img('sim')} ${T2('From 2 November the plan trains the MSR station format: timed stations, procedures, calculations and two full exam-day rehearsals (12 and 16 Nov). Days before stay as they were.', 'Desde el 2 de noviembre el plan entrena el formato de estaciones de MSR: estaciones cronometradas, procedimientos, cálculos y dos ensayos completos (12 y 16 nov). Los días anteriores se mantienen.')}</p>
+      <p class="plan-note">${img('sim')} ${T2('From 2 November the plan trains the MSR station format. From 14 November it switches to the Unit 9 mock tests in the official format (5 stations × 15 minutes) and the cheat sheets. Days before stay as they were.', 'Desde el 2 de noviembre el plan entrena el formato de estaciones de MSR. Desde el 14 de noviembre pasa a los exámenes de prueba de la Unidad 9 con el formato oficial (5 estaciones × 15 minutos) y a las chuletas. Los días anteriores se mantienen.')}</p>
       <ol class="sprint">${days.map((d, i) => {
         const key = d.toISOString().slice(0, 10), item = key >= PLAN2_FROM ? PLAN2[key] : SPRINT[Math.max(0, SPRINT.length - (days.length - i))];
         const tasks = item[0] === 'sim' ? [['sim', item[1]], [item[2]]] : item.map(k => [k]);
@@ -904,7 +909,7 @@
   /* ---------- EXAM info & PROFILE ---------- */
   R.exam = () => view(document.getElementById(`exam-${S.lang}`).innerHTML);
   R.me = () => {
-    const tot = NX.modules.reduce((n, m) => n + m.lessons.length, 0), done = Object.keys(S.done).filter(k => !k.endsWith('-q')).length;
+    const core = NX.modules.filter(m => !m.extra), tot = core.reduce((n, m) => n + m.lessons.length, 0), done = Object.keys(S.done).filter(k => !k.endsWith('-q') && core.some(m => k.startsWith(m.id + '-'))).length;
     view(`<section class="profile card">${img('mary', 'avatar-big float')}<div><h1>${esc(S.name)}</h1><p>${t('level')} ${level()} · ${S.xp} XP</p></div></section>
       <div class="pstats">
         <div class="card">${img('fire')}<b>${S.streak}</b><small>${t('streak')}</small></div>
@@ -1139,7 +1144,7 @@
     stopTimer(); stopVoice(); cancelAnimationFrame(ecgRAF);
     leaveHooks.splice(0).forEach(fn => { try { fn(); } catch (e) { /* ignore */ } });
     const [, page, a, b] = (location.hash || '#/').split('/');
-    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', stations: 'sim', station: 'sim', examday: 'sim', calc: 'sim', redlines: 'sim', ulpan: 'ulpan', ulesson: 'ulpan', utest: 'ulpan', uweak: 'ulpan', uplace: 'ulpan', ugame: 'ulpan', utalk: 'ulpan', uexam: 'ulpan', udeck: 'ulpan', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', triage: 'practice', medpass: 'practice', vitals: 'practice', rain: 'practice', memory: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
+    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', stations: 'sim', station: 'sim', examday: 'sim', calc: 'sim', redlines: 'sim', mocks: 'sim', mocktest: 'sim', cheats: 'sim', ulpan: 'ulpan', ulesson: 'ulpan', utest: 'ulpan', uweak: 'ulpan', uplace: 'ulpan', ugame: 'ulpan', utalk: 'ulpan', uexam: 'ulpan', udeck: 'ulpan', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', triage: 'practice', medpass: 'practice', vitals: 'practice', rain: 'practice', memory: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
     document.querySelectorAll('[data-nav]').forEach(x => x.classList.toggle('active', x.dataset.nav === tab));
     $('#app').classList.toggle('wide', tab !== 'learn' && tab !== 'me');
     (R[page] || R.learn)(a, b);
@@ -1210,7 +1215,8 @@
     signOut: async () => { await cloud.A_.signOut(cloud.auth); refreshCloudBox(); }
   };
   /* games in js/games.js plug in here */
-  const LEV = { R, A: window.A, view, img, esc, shuffle, pick, t, L, L2, meaning, SFX, play, speak, stopVoice, segments, touch, stat, confetti, toast, mascot, countUp,
+  const unitExtra = {}; /* extensions add a panel under a unit's path (Unit 9: mock tests) */
+  const LEV = { R, A: window.A, unitExtra, view, img, esc, shuffle, pick, t, L, L2, meaning, SFX, play, speak, stopVoice, segments, touch, stat, confetti, toast, mascot, countUp,
     chips, uniqVocab, modById, save, state: () => S, onLeave: fn => leaveHooks.push(fn), UNIT_COLORS };
   (window.LEV_EXT || []).forEach(ext => ext(LEV));
   route();

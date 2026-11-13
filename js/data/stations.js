@@ -2,7 +2,7 @@
    (performance with a mannequin or actor, a short procedure, a debrief with fixed questions),
    timed, with the safety "red lines" spoken out loud. Content follows Mary's Sept–Dec 2026
    reading list: Kozier (procedures), Brunner & Suddarth, Wong, Olds, Townsend, the Drug Handbook,
-   AHA 2020 and the MOH circulars. The Ministry does not publish the exact stations. */
+   AHA 2025 and the MOH circulars. The official exam format (Ministry briefing, 24.10.2026) is in js/data/mocks.js. */
 
 /* Red lines said out loud. [id, critical, label [en, es], keywords en, keywords es]
    Keywords let the microphone tick an item when Mary says it. */
@@ -57,7 +57,7 @@ NX.procs = [
       ['Start slowly and stay with the patient for the first 15 minutes', 'Iniciar lento y quedarse con el paciente los primeros 15 minutos'],
       ['Recheck vital signs at 15 minutes, then set the ordered rate', 'Repetir constantes a los 15 minutos y luego poner el ritmo pautado'],
       ['Finish within 4 hours; document unit numbers, times and response', 'Terminar en 4 horas; registrar números de unidad, horas y respuesta']] },
-  { id: 'bls', img: 'heart', t: ['Adult BLS with an AED (AHA 2020)', 'SVB del adulto con DEA (AHA 2020)'], src: ['AHA 2020 Adult BLS', 'AHA 2020 SVB del adulto'], crit: [3, 7],
+  { id: 'bls', img: 'heart', t: ['Adult BLS with an AED (AHA 2025)', 'SVB del adulto con DEA (AHA 2025)'], src: ['AHA 2025 Adult BLS', 'AHA 2025 SVB del adulto'], crit: [3, 7],
     steps: [['Make sure the scene is safe', 'Asegurar que la escena es segura'],
       ['Tap and shout: check responsiveness', 'Tocar y hablar fuerte: comprobar respuesta'],
       ['Shout for help, call the emergency team, send for an AED', 'Pedir ayuda, llamar al equipo de emergencias, pedir un DEA'],

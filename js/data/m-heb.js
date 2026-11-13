@@ -1,5 +1,5 @@
 NX.addModule({
-  id: 'heb', icon: '🇮🇱',
+  id: 'heb', extra: true, icon: '🇮🇱',
   t: ['Bedside Medical Hebrew', 'Hebreo médico junto a la cama'],
   b: ['Body, symptoms, people, bedside phrases, forms and word roots: the Hebrew you will hear on the ward.',
       'Cuerpo, síntomas, personas, frases junto a la cama, formularios y raíces: el hebreo que oirás en la sala.'],

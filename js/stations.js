@@ -16,6 +16,7 @@
     med: ['Medication station', 'Estación de medicación', 'pharm'],
     comm: ['Actor: communication', 'Actor: comunicación', 'psych'],
     teach: ['Actor: teaching', 'Actor: educación', 'clipboard'],
+    actor: ['Actor: conversation and teaching', 'Actor: conversación y educación', 'mat'],
     proc: ['Procedure (5 min)', 'Procedimiento (5 min)', 'syringe'],
     sbar: ['SBAR call', 'Llamada SBAR', 'phone']
   };
@@ -39,16 +40,16 @@
   }
 
   /* ---------- station runner ---------- */
-  let ST = null, EXD = null, tick = 0;
+  let ST = null, EXD = null, HOOK = null, tick = 0; /* HOOK: a mock test running this station (crumb, next label, callbacks) */
   onLeave(() => { clearInterval(tick); micStop(); });
   function buildParts(st) {
     const dq = (st.dq || []).map(r => ({ p: 'dq', r }));
     if (st.kind === 'proc') return [{ p: 'order', id: st.proc }];
     if (st.kind === 'sbar') return [{ p: 'sbar', id: st.sbar }, ...dq];
     if (st.kind === 'drill') return [{ p: 'open' }, { p: 'close' }];
-    const steps = st.kind === 'acute' ? NX.sims.find(s => s.id === st.sim).steps : st.steps;
-    const mid = st.kind === 'teach' ? [{ p: 'teach', id: st.teach }, { p: 'back', id: st.teach }]
-      : steps.map(x => x.calc ? { p: 'calc', id: x.calc } : { p: 'step', s: x });
+    const steps = st.steps || (st.kind === 'acute' ? NX.sims.find(s => s.id === st.sim).steps : []);
+    const talk = [{ p: 'teach', id: st.teach }, { p: 'back', id: st.teach }];
+    const mid = st.kind === 'teach' ? talk : steps.map(x => x.calc ? { p: 'calc', id: x.calc } : { p: 'step', s: x }).concat(st.kind === 'actor' ? talk : []);
     return [{ p: 'open' }, ...mid, { p: 'close' }, ...dq];
   }
   function runStation(st) {
@@ -59,11 +60,12 @@
   }
   function tickClock() {
     const el = $('#stclock'); if (!ST) return clearInterval(tick);
+    if (!el) { clearInterval(tick); micStop(); ST = null; HOOK = null; return; } /* she left the station page */
     const left = Math.max(0, ST.deadline - Date.now());
     if (el) { el.textContent = `${Math.floor(left / 60000)}:${String(Math.floor(left / 1000) % 60).padStart(2, '0')}`; el.parentElement.classList.toggle('low', left < 120000); }
     if (!left) { clearInterval(tick); micStop(); ST.timeUp = true; SFX.no(); finishStation(); }
   }
-  const crumb = () => EXD ? `<span class="crumb">${T('Exam day', 'Día de examen')} · ${T('station', 'estación')} ${EXD.k + 1}/${EXD.ids.length}</span>` : `<a class="crumb" href="#/stations">← ${T('Stations', 'Estaciones')}</a>`;
+  const crumb = () => HOOK ? HOOK.crumb : EXD ? `<span class="crumb">${T('Exam day', 'Día de examen')} · ${T('station', 'estación')} ${EXD.k + 1}/${EXD.ids.length}</span>` : `<a class="crumb" href="#/stations">← ${T('Stations', 'Estaciones')}</a>`;
   const vcell = (k, label, val, unit, bad) => val === undefined ? '' : `<div class="vt ${k} ${bad ? 'alarm' : ''}"><small>${label}</small><b>${val}</b><i>${unit}</i></div>`;
   const isBad = (k, v) => ({ hr: v < 50 || v > 120, spo2: v < 90, rr: v < 10 || v > 28, t: v >= 38.5 || v < 35.5, gl: v < 70 || v > 250, bp: parseInt(v) < 90 || parseInt(v) >= 180 }[k]);
   function monitor(v) {
@@ -298,7 +300,8 @@
     }
     save(); touch(10 + Math.round(pct / 10)); pass ? (SFX.win(), confetti()) : SFX.no();
     if (EXD) EXD.res.push({ id: st.id, pct, pass, crit: ST.crit.slice(), timeUp: !!ST.timeUp });
-    const nextLabel = EXD ? (EXD.k + 1 < EXD.ids.length ? T('Next station', 'Siguiente estación') : T('See results', 'Ver resultados')) : '';
+    if (HOOK) HOOK.onResult({ id: st.id, pct, pass, crit: ST.crit.slice(), timeUp: !!ST.timeUp });
+    const nextLabel = HOOK ? HOOK.next : EXD ? (EXD.k + 1 < EXD.ids.length ? T('Next station', 'Siguiente estación') : T('See results', 'Ver resultados')) : '';
     view(`${crumb()}<section class="card debrief st-result"><div class="db-head">${mascot(pass ? 'happy' : 'sad', 'big jump')}<div>
         <h1>${L2(st.t)}</h1><p class="verdict ${pass ? 'pass' : 'fail'}">${pass ? T('Station passed', 'Estación superada') : T('Not passed yet', 'Aún no superada')}</p>
         <p class="pct"><b data-c="${pct}" data-suffix="%">0</b> <small>⏱ ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')} / ${st.mins}:00</small></p></div></div>
@@ -307,11 +310,15 @@
       <div class="skillbars">${ST.log.map(l => { const lab = { open: T('Opening red lines', 'Líneas rojas al entrar'), close: T('Closing red lines', 'Líneas rojas al salir'), step: T('Decision', 'Decisión'), calc: T('Calculation', 'Cálculo'), teach: T('Teaching points', 'Puntos de educación'), order: T('Procedure order', 'Orden del procedimiento'), sbar: 'SBAR', dq: T('Examiner’s question', 'Pregunta del examinador') }[l.p];
         const got = l.got !== undefined ? l.got : l.sc !== undefined ? Math.max(0, l.sc) : l.ok ? (l.p === 'dq' ? 1 : 2) : 0, max = l.max || (l.p === 'dq' ? 1 : 2);
         return `<div><span class="skill ${l.p === 'open' || l.p === 'close' ? 'safety' : l.p === 'dq' ? 'doc' : 'act'}">${lab}</span><div class="mbar-mini"><i style="width:${100 * got / max}%"></i></div><small>${got}/${max}</small></div>`; }).join('')}</div>
-      <div class="row">${EXD ? `<button class="btn green" onclick="A.exNext()">${nextLabel} →</button>` : `<button class="btn green" onclick="A.stAgain()">${T('Try again', 'Repetir')}</button><a class="btn ghost" href="#/stations">${T('All stations', 'Todas las estaciones')}</a>`}</div></section>`);
+      <div class="row">${HOOK ? `<button class="btn green" onclick="A.stHookNext()">${nextLabel} →</button>` : EXD ? `<button class="btn green" onclick="A.exNext()">${nextLabel} →</button>` : `<button class="btn green" onclick="A.stAgain()">${T('Try again', 'Repetir')}</button><a class="btn ghost" href="#/stations">${T('All stations', 'Todas las estaciones')}</a>`}</div></section>`);
     document.querySelectorAll('[data-c]').forEach(el => countUp(el, +el.dataset.c));
     ST = Object.assign(ST, { finished: true });
   }
   A.stAgain = () => runStation(ST.st);
+  A.stHookNext = () => { const h = HOOK; HOOK = null; ST = null; if (h) h.onNext(); };
+  /* mock tests (js/mocks.js) run stations through this, with their own crumb and next step */
+  LEV.runStation = (st, hook) => { EXD = null; HOOK = hook || null; runStation(st); };
+  LEV.stationKind = k => KIND[k];
 
   /* ---------- exam day: 6 stations back to back ---------- */
   const byKind = k => NX.stations.filter(s => s.kind === k);
@@ -320,7 +327,7 @@
     return [...acute, pick(byKind('med')), pick(byKind('comm')), pick(byKind('teach')), last].map(s => s.id);
   }
   R.examday = () => {
-    clearInterval(tick); EXD = null;
+    clearInterval(tick); EXD = null; HOOK = null;
     const mins = 15 + 15 + 12 + 10 + 10 + 5;
     view(`<a class="crumb" href="#/stations">← ${T('Stations', 'Estaciones')}</a><section class="card center-card exam-intro">${img('sim', 'head-img float')}
       <h1>${T('Exam day rehearsal', 'Ensayo del día de examen')}</h1>
@@ -356,7 +363,7 @@
 
   /* ---------- hub, single station, drills ---------- */
   R.station = id => {
-    EXD = null;
+    EXD = null; HOOK = null;
     if (id === 'weak') {
       const pool = NX.stations.filter(s => ['acute', 'med', 'comm', 'teach'].includes(s.kind));
       const score = s => { const r = rec()[s.id]; return r ? (r.pass ? 100 + r.best : r.best) : -1; };
@@ -365,17 +372,19 @@
     const st = NX.stations.find(s => s.id === id); if (!st) return R.stations();
     runStation(st);
   };
-  R.redlines = () => { EXD = null; runStation({ id: 'drill', kind: 'drill', img: 'steth', mins: 3, t: ['Red-lines drill', 'Práctica de líneas rojas'], door: ['Say your opening and closing safety checks out loud, as you will in every station.', 'Di en voz alta tus comprobaciones de seguridad al entrar y al salir, como en cada estación.'] }); };
+  R.redlines = () => { EXD = null; HOOK = null; runStation({ id: 'drill', kind: 'drill', img: 'steth', mins: 3, t: ['Red-lines drill', 'Práctica de líneas rojas'], door: ['Say your opening and closing safety checks out loud, as you will in every station.', 'Di en voz alta tus comprobaciones de seguridad al entrar y al salir, como en cada estación.'] }); };
   R.stations = filter => {
-    clearInterval(tick); EXD = null;
+    clearInterval(tick); EXD = null; HOOK = null;
     const r = rec(), all = NX.stations, passed = all.filter(s => (r[s.id] || {}).pass).length;
     const card = (s, i) => { const x = r[s.id]; return `<a class="card st-card tilt" href="#/station/${s.id}" style="--d:${i * 40}ms">${img(s.img)}<div><h3>${L2(s.t)}</h3><small>${s.mins} min${x ? ` · ${T('best', 'mejor')} ${x.best}%` : ''}</small></div>${x ? `<span class="st-badge ${x.pass ? 'pass' : 'fail'}">${x.pass ? '✓' : '•'}</span>` : ''}</a>`; };
     const kinds = filter && KIND[filter] ? [filter] : Object.keys(KIND);
     view(`<section class="page-head">${img('sim', 'head-img float')}<div><h1>${T('MSR exam stations', 'Estaciones del examen MSR')}</h1>
         <p>${T('Timed stations like a simulation licensing exam at MSR: mannequin and actor scenarios, a medication station, procedures, SBAR and the examiner’s debrief. Say everything out loud.', 'Estaciones cronometradas como un examen de licencia por simulación en MSR: maniquí y actores, medicación, procedimientos, SBAR y el interrogatorio del examinador. Dilo todo en voz alta.')}</p></div></section>
       <div class="st-hero">
-        <a class="card hero-exam tilt" href="#/examday">${img('trophy')}<div><h2>${T('Exam day rehearsal', 'Ensayo del día de examen')}</h2><p>${T('6 stations back to back, about 67 minutes', '6 estaciones seguidas, unos 67 minutos')}</p>${S().best.examday ? `<span class="chip">${T('best', 'mejor')}: ${S().best.examdayPass || 0}/6 · ${S().best.examday}%</span>` : ''}</div></a>
+        <a class="card hero-exam tilt" href="#/mocks">${img('trophy')}<div><h2>${T('Mock tests: the real format', 'Exámenes de prueba: el formato real')}</h2><p>${T('5 stations × 15 minutes, like 18 November', '5 estaciones × 15 minutos, como el 18 de noviembre')}</p>${[1, 2, 3, 4].some(n => S().best['mx' + n]) ? `<span class="chip">${T('best', 'mejor')}: ${Math.max(...[1, 2, 3, 4].map(n => S().best['mx' + n] || 0))}%</span>` : ''}</div></a>
         <div class="st-tools">
+          <a class="card tool tilt cheat-tool" href="#/cheats">${img('bulb')}<b>${T('Cheat sheets', 'Chuletas')}</b><small>${T('last look', 'último repaso')}</small></a>
+          <a class="card tool tilt" href="#/examday">${img('sim')}<b>${T('Exam day rehearsal (6 stations)', 'Ensayo de 6 estaciones')}</b><small>${S().best.examday ? `${T('best', 'mejor')} ${S().best.examday}%` : '67 min'}</small></a>
           <a class="card tool tilt" href="#/redlines">${img('lock')}<b>${T('Red-lines drill', 'Líneas rojas')}</b><small>3 min</small></a>
           <a class="card tool tilt" href="#/calc">${img('calc')}<b>${T('Bedside calculations', 'Cálculos a pie de cama')}</b><small>${S().best.calc ? `${T('best', 'mejor')} ${S().best.calc}/8` : '8'}</small></a>
           <a class="card tool tilt" href="#/station/weak">${img('target')}<b>${T('My weakest station', 'Mi estación más débil')}</b><small>${passed}/${all.length} ${T('passed', 'superadas')}</small></a>

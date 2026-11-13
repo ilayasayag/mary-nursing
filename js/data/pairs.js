@@ -18,7 +18,7 @@ NX.pairs = [
   ['Fetal heart rate', 'FC fetal', '110-160/min', '110-160/min', 'עובר'],
   ['Lithium therapeutic level', 'Litemia terapéutica', '0.6-1.2 mEq/L', '0,6-1,2 mEq/L'],
   ['Warfarin INR target', 'INR objetivo con warfarina', '2-3', '2-3'],
-  ['Adult CPR rate (AHA 2020)', 'Ritmo de RCP adulto (AHA 2020)', '100-120 compressions/min', '100-120 compresiones/min', 'החייאה'],
+  ['Adult CPR rate (AHA 2025)', 'Ritmo de RCP adulto (AHA 2025)', '100-120 compressions/min', '100-120 compresiones/min', 'החייאה'],
   ['Adult compression depth', 'Profundidad en el adulto', '5-6 cm', '5-6 cm'],
   ['Child CPR, two rescuers', 'RCP pediátrica, dos reanimadores', '15:2', '15:2'],
   ['Late decelerations', 'Desaceleraciones tardías', 'Placental insufficiency', 'Insuficiencia placentaria'],
