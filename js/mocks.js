@@ -23,30 +23,65 @@
   const daysLeft = () => Math.ceil((new Date('2026-11-18T08:00:00') - Date.now()) / 864e5);
   const tone = p => p === null ? 'none' : p >= 85 ? 'good' : p >= 70 ? 'meh' : 'bad';
 
-  /* deterministic papers: each topic is shuffled once with a fixed seed, so papers 1-3 take different slices */
+  /* each paper serves questions she has not answered yet (LEV.fresh: unseen first, random within a tie); calculations
+     are generated fresh with new numbers every time, plus the least-seen bedside problems */
   const rng = seed => () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const seeded = (arr, r) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-  const fmt = x => String(Math.round(x * 100) / 100).replace('.', es() ? ',' : '.');
-  function calcQ(c, r) {
-    const wrong = [...new Set([c.ans * 10, c.ans / 10, c.ans * 2, c.ans / 2].map(x => Math.round(x * 100) / 100))].filter(x => x > 0 && x !== c.ans);
-    const vals = seeded([c.ans, ...seeded(wrong, r).slice(0, 3)], r);
-    return { m: 'calc', id: c.id, q: L2(c.q), o: vals.map(x => `${fmt(x)} ${L2(c.unit)}`), a: vals.indexOf(c.ans), w: L2(c.how) };
+  const r2 = x => Math.round(x * 100) / 100, r1 = x => Math.round(x * 10) / 10;
+  const fmt = x => String(r2(x)).replace('.', es() ? ',' : '.');
+  const seenN = id => (S().seen || {})[id] || 0;
+  /* options: the answer plus three classic slips (wrong formula, inverted ratio, decimal shift), all distinct */
+  function choices(ans, slips, unit, r) {
+    const wrong = [...new Set([...slips, ans * 10, ans / 2, ans * 2].map(r2))].filter(x => x > 0 && x !== r2(ans)).slice(0, 3);
+    const vals = seeded([r2(ans), ...wrong], r);
+    return { o: vals.map(x => `${fmt(x)} ${L2(unit)}`), a: vals.indexOf(r2(ans)) };
   }
+  function calcQ(c, r) {
+    return Object.assign({ m: 'calc', id: 'calc:' + c.id, q: L2(c.q), w: L2(c.how) }, choices(c.ans, [c.ans / 10], c.unit, r));
+  }
+  const one = a => a[Math.floor(Math.random() * a.length)];
+  const ML = ['mL', 'mL'];
+  const GEN = [
+    () => { const [d, s, conc, doses] = one([['Furosemide', 'Furosemida', 10, [20, 40, 60]], ['Ondansetron', 'Ondansetrón', 2, [4, 8]], ['Metoclopramide', 'Metoclopramida', 5, [5, 10]], ['Morphine', 'Morfina', 10, [2, 3, 4, 5]], ['Gentamicin', 'Gentamicina', 40, [80, 120, 160]]]), dose = one(doses), ans = dose / conc;
+      return { q: [`${d} ${dose} mg IV is ordered. The ampoule holds ${conc} mg/mL. How many mL do you draw up?`, `Se pauta ${s} ${dose} mg IV. La ampolla tiene ${conc} mg/mL. ¿Cuántos mL cargas?`], ans, slips: [conc / dose, dose * conc], unit: ML,
+        how: [`${dose} ÷ ${conc} × 1 mL = ${fmt(ans)} mL.`, `${dose} ÷ ${conc} × 1 mL = ${fmt(ans)} mL.`] }; },
+    () => { const [d, s, tab] = one([['Metoprolol', 'Metoprolol', 25], ['Warfarin', 'Warfarina', 5], ['Prednisone', 'Prednisona', 5], ['Furosemide', 'Furosemida', 40]]), mult = one([0.5, 1.5, 2, 3]), dose = tab * mult;
+      return { q: [`${d} ${fmt(dose)} mg by mouth is ordered. Scored tablets are ${tab} mg. How many tablets?`, `Se pauta ${s} ${fmt(dose)} mg oral. Los comprimidos ranurados son de ${tab} mg. ¿Cuántos comprimidos?`], ans: mult, slips: [tab / dose, mult + 1], unit: ['tablets', 'comprimidos'],
+        how: [`${fmt(dose)} ÷ ${tab} = ${fmt(mult)} tablet(s).`, `${fmt(dose)} ÷ ${tab} = ${fmt(mult)} comprimido(s).`] }; },
+    () => { const [vol, h] = one([[1000, 8], [1000, 6], [1000, 12], [500, 4], [500, 6], [250, 2], [100, 0.5], [1000, 10]]), ans = r1(vol / h);
+      return { q: [`${vol} mL of IV fluid over ${fmt(h)} hours by infusion pump. Rate in mL/h?`, `${vol} mL de suero IV en ${fmt(h)} horas con bomba. ¿Ritmo en mL/h?`], ans, slips: [r1(vol / (h * 60)), r1(vol / h / 2)], unit: ['mL/h', 'mL/h'],
+        how: [`${vol} ÷ ${fmt(h)} h = ${fmt(ans)} mL/h.`, `${vol} ÷ ${fmt(h)} h = ${fmt(ans)} mL/h.`] }; },
+    () => { const [vol, h] = one([[1000, 8], [500, 4], [1000, 6], [250, 2], [500, 6]]), df = one([20, 15, 10]), ans = Math.round(vol * df / (h * 60));
+      return { q: [`${vol} mL over ${h} hours by gravity. The set delivers ${df} drops/mL. Drops per minute?`, `${vol} mL en ${h} horas por gravedad. El equipo da ${df} gotas/mL. ¿Gotas por minuto?`], ans, slips: [Math.round(vol / (h * 60)), Math.round(vol * df / h / 10)], unit: ['drops/min', 'gotas/min'],
+        how: [`${vol} × ${df} ÷ ${h * 60} min = ${ans} drops/min (rounded).`, `${vol} × ${df} ÷ ${h * 60} min = ${ans} gotas/min (redondeado).`] }; },
+    () => { const [d, s, perKg, mg, per] = one([['Paracetamol', 'Paracetamol', 15, 120, 5], ['Ibuprofen', 'Ibuprofeno', 10, 100, 5]]), kg = 8 + Math.floor(Math.random() * 17), dose = perKg * kg, ans = r1(dose / mg * per);
+      return { q: [`${d} ${perKg} mg/kg for a ${kg} kg child. The syrup is ${mg} mg/${per} mL. How many mL?`, `${s} ${perKg} mg/kg para un niño de ${kg} kg. El jarabe es de ${mg} mg/${per} mL. ¿Cuántos mL?`], ans, slips: [r1(dose / mg), dose / 10], unit: ML,
+        how: [`${perKg} × ${kg} = ${dose} mg. ${dose} ÷ ${mg} × ${per} mL = ${fmt(ans)} mL.`, `${perKg} × ${kg} = ${dose} mg. ${dose} ÷ ${mg} × ${per} mL = ${fmt(ans)} mL.`] }; },
+    () => { const [units, bag] = one([[25000, 500], [25000, 250]]), per = units / bag, order = one([800, 1000, 1200, 1500]), ans = r1(order / per);
+      return { q: [`Heparin ${units.toLocaleString('en')} units in ${bag} mL. The order is ${order} units/h. Pump rate in mL/h?`, `Heparina ${units.toLocaleString('es')} unidades en ${bag} mL. La orden es ${order} unidades/h. ¿Ritmo en mL/h?`], ans, slips: [r1(per / order * 100), r1(order / units * 100)], unit: ['mL/h', 'mL/h'],
+        how: [`${units} ÷ ${bag} = ${per} units/mL. ${order} ÷ ${per} = ${fmt(ans)} mL/h.`, `${units} ÷ ${bag} = ${per} unidades/mL. ${order} ÷ ${per} = ${fmt(ans)} mL/h.`] }; },
+    () => { const dose = one([3, 5, 8, 10]), kg = 50 + 5 * Math.floor(Math.random() * 9), ans = r1(dose * kg * 60 / 1600);
+      return { q: [`Dopamine 400 mg in 250 mL. The order is ${dose} mcg/kg/min for a ${kg} kg patient. Pump rate in mL/h?`, `Dopamina 400 mg en 250 mL. La orden es ${dose} mcg/kg/min para un paciente de ${kg} kg. ¿Ritmo en mL/h?`], ans, slips: [r2(dose * kg / 1600), r1(dose * 60 / 1600 * 10)], unit: ['mL/h', 'mL/h'],
+        how: [`400 mg ÷ 250 mL = 1600 mcg/mL. ${dose} × ${kg} × 60 ÷ 1600 = ${fmt(ans)} mL/h.`, `400 mg ÷ 250 mL = 1600 mcg/mL. ${dose} × ${kg} × 60 ÷ 1600 = ${fmt(ans)} mL/h.`] }; }
+  ];
+  function genQ(r) { const g = one(GEN)(); return Object.assign({ m: 'calc', id: '', gen: true, q: L2(g.q), w: L2(g.how) }, choices(g.ans, g.slips, g.unit, r)); }
   function bankQ(q, r) {
     const ord = seeded(q.o.map((_, k) => k), r);
     return { m: q.m, id: q.id, q: L(q.q), o: ord.map(k => L(q.o[k])), a: ord.indexOf(q.a), w: L(q.w) };
   }
-  const poolOf = m => m === 'calc' ? NX.calcs : NX.qs.filter(q => q.m === m);
+  const poolOf = m => m === 'calc' ? NX.calcs.map(c => Object.assign({}, c, { id: 'calc:' + c.id, raw: c })) : NX.qs.filter(q => q.m === m);
+  /* k questions of topic m: unseen first; calculations are mostly generated */
+  function topicItems(m, k, r, first = []) {
+    if (m === 'calc') { const gen = Math.ceil(k * 0.6); return [...Array(gen)].map(() => genQ(r)).concat(LEV.fresh(poolOf('calc')).slice(0, k - gen).map(c => calcQ(c.raw, r))); }
+    const pool = LEV.fresh(poolOf(m)).sort((a, b) => (first.includes(b.id) ? 1 : 0) - (first.includes(a.id) ? 1 : 0) || seenN(a.id) - seenN(b.id));
+    return pool.slice(0, k).map(q => bankQ(q, r));
+  }
   function paper(n) {
     if (n === 4) return focusPaper();
-    const out = [], r = rng(4200 + n);
-    TOPICS.forEach(([m, k], ti) => {
-      const pool = seeded(poolOf(m), rng(97 + ti));
-      for (let j = 0; j < k; j++) { const item = pool[((n - 1) * k + j) % pool.length]; out.push(m === 'calc' ? calcQ(item, r) : bankQ(item, r)); }
-    });
-    return seeded(out, r);
+    const r = rng(Date.now() % 100000);
+    return shuffle(TOPICS.flatMap(([m, k]) => topicItems(m, k, r)));
   }
-  /* mock 4: more questions from her weaker topics, her past mistakes first */
+  /* mock 4: more questions from her weaker topics; unseen first, then her past mistakes */
   function focusPaper() {
     const acc = { psych: pctOf('psych'), pharm: pctOf('pharm'), law: pctOf('law'), calc: S().best.calc ? Math.round(100 * S().best.calc / 8) : null };
     const gap = m => Math.max(5, 100 - (acc[m] === null ? 70 : acc[m]));
@@ -54,12 +89,8 @@
     const counts = TOPICS.map(([m]) => [m, 5 + Math.round(10 * gap(m) / tot)]);
     while (counts.reduce((a, c) => a + c[1], 0) > 30) counts.sort((a, b) => b[1] - a[1])[0][1]--;
     while (counts.reduce((a, c) => a + c[1], 0) < 30) counts.sort((a, b) => gap(b[0]) - gap(a[0]))[0][1]++;
-    const r = rng(Date.now() % 100000), wrong = new Set(S().wrong || []), out = [];
-    counts.forEach(([m, k]) => {
-      const pool = shuffle(poolOf(m)).sort((a, b) => (wrong.has(b.id) ? 1 : 0) - (wrong.has(a.id) ? 1 : 0));
-      pool.slice(0, k).forEach(item => out.push(m === 'calc' ? calcQ(item, r) : bankQ(item, r)));
-    });
-    return shuffle(out);
+    const r = rng(Date.now() % 100000), wrong = S().wrong || [];
+    return shuffle(counts.flatMap(([m, k]) => topicItems(m, k, r, wrong)));
   }
   /* mock 4 stations: in each slot, the station she has not tried yet, else her lowest score */
   function idsFor(n) {
@@ -162,7 +193,7 @@
     view(`${crumb(5)}<section class="card mxk" id="mxk">
       <div class="mxk-top"><div class="mx-ring"><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="19"/><circle class="fg" id="kring" cx="22" cy="22" r="19" style="stroke-dasharray:${RING}"/></svg><b id="kclock"></b></div>
         <div class="mxk-dots">${K.qs.map((_, k) => `<i class="${k === K.i ? 'cur' : K.ans[k] !== undefined ? 'done' : k < K.i ? 'skip' : ''}"></i>`).join('')}</div><span class="chip">${K.i + 1}/${n}</span></div>
-      <div class="mxk-card pop"><span class="mxk-topic">${img(topicImg(q.m))}${esc(topicLabel(q.m))}</span>
+      <div class="mxk-card pop"><span class="mxk-topic">${img(topicImg(q.m))}${esc(topicLabel(q.m))}${q.gen || !seenN(q.id) ? `<em class="mxk-new">${T('new', 'nueva')}</em>` : ''}</span>
         <p class="mxk-q">${chips(esc(q.q))}</p>
         <div class="choices">${q.o.map((o, k) => `<button class="choice ${K.ans[K.i] === k ? 'sel' : ''}" data-k="${k}" onclick="A.mxPick(${k})"><kbd>${k + 1}</kbd><span>${chips(esc(o))}</span></button>`).join('')}</div></div>
       <div class="row mxk-foot">${K.i ? `<button class="btn ghost" onclick="A.mxPrevQ()">← ${T('Back', 'Atrás')}</button>` : ''}<button class="btn green" onclick="A.mxNextQ()">${K.i + 1 < n ? T('Next', 'Siguiente') : T('Finish', 'Terminar')} →</button></div></section>`);
@@ -181,6 +212,7 @@
     const by = {}, wrong = [];
     K.qs.forEach((q, k) => {
       const ok = K.ans[k] === q.a, b = by[q.m] || (by[q.m] = [0, 0]); b[1]++; if (ok) b[0]++;
+      if (q.id) LEV.markSeen(q.id);
       if (q.m !== 'calc') { stat(q.m, ok); const w = S().wrong, i = w.indexOf(q.id); if (ok && i > -1) w.splice(i, 1); if (!ok && i < 0) w.push(q.id); }
       if (!ok) wrong.push({ q, pick: K.ans[k] });
     });

@@ -200,3 +200,4 @@
   .mxk-q { font-size: 1.02rem; }
 }
 @media (prefers-reduced-motion: reduce) { .mx-track i.cur, .mx-interp span { animation: none; } }
+.mxk-new { margin-left: 6px; padding: 1px 8px; border-radius: 99px; background: var(--green); color: #fff; font-style: normal; font-size: .66rem; letter-spacing: .06em; animation: mxDrop .4s both; }

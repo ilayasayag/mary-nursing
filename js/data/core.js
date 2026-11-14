@@ -30,6 +30,13 @@ window.NX = {
     });
     NX.modules.push(mod);
   },
+  /* exam-level questions for a unit, not tied to one lesson: { module: [question rows] } (ids m + 'D' + n) */
+  addDeepQ(map) {
+    Object.entries(map).forEach(([m, rows]) => { const base = NX.qs.filter(q => q.m === m && /D\d+$/.test(q.id)).length; rows.forEach((r, i) => NX.qs.push({
+      id: `${m}D${base + i}`, m, d: r[0], a: r[1], q: { en: r[2], es: r[3] },
+      o: r[4].map((e, k) => ({ en: e, es: r[5] ? r[5][k] : e })), w: { en: r[6], es: r[7] }
+    })); });
+  },
   /* lesson-tied questions: { 'module-lessonIndex': [question rows] } */
   addLessonQ(map) {
     Object.entries(map).forEach(([key, rows]) => {

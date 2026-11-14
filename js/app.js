@@ -14,7 +14,7 @@
   const UNIT_COLORS = ['#58cc02', '#1cb0f6', '#ce82ff', '#ff9600', '#ff4b4b', '#00cd9c', '#ff86d0', '#2b70c9', '#ffc800', '#7c5cff'];
 
   /* ---------- state ---------- */
-  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, daily: { d: '', xp: 0 }, sims: {}, stations: {}, ulpan: null, planStart: '', updatedAt: 0, lastBackup: 0, remindAfter: 0 };
+  const def = { name: 'Mary', lang: 'en', hints: true, sound: true, autoRead: true, rate: 1, xp: 0, streak: 0, last: '', done: {}, stats: {}, box: {}, wrong: [], best: {}, plan: {}, badges: [], answered: 0, daily: { d: '', xp: 0 }, sims: {}, stations: {}, ulpan: null, seen: {}, planStart: '', updatedAt: 0, lastBackup: 0, remindAfter: 0 };
   let S;
   try { S = Object.assign({}, def, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = Object.assign({}, def); }
   if (!S.planStart) S.planStart = today();
@@ -305,6 +305,19 @@
     save(); chrome();
   }
   const level = () => Math.floor(Math.sqrt(S.xp / 40)) + 1;
+  /* questions she has answered: exams serve unseen ones first, so they do not come back */
+  const markSeen = id => { if (id) S.seen[id] = (S.seen[id] || 0) + 1; };
+  const fresh = list => shuffle(list).sort((a, b) => (S.seen[a.id] || 0) - (S.seen[b.id] || 0)); /* unseen first, random within a tie */
+  /* first run of tracking: count what her history shows she has already met (finished lessons; units she has
+     answered more questions in than they hold). Questions added in November 2026 (ids …D…, maternity lessons 5-8) stay new. */
+  function seedSeen() {
+    if (S.seenInit) return; S.seenInit = 1;
+    const isNew = q => /D\d+$/.test(q.id) || (q.m === 'mat' && q.l >= 4);
+    const old = NX.qs.filter(q => !isNew(q) && q.m !== 'heb');
+    old.forEach(q => { const n = (S.stats[q.m] || {}).n || 0, pool = old.filter(x => x.m === q.m).length;
+      if ((q.l !== undefined && S.done[nodeKey(q.m, q.l)]) || n >= pool) S.seen[q.id] = S.seen[q.id] || 1; });
+    save();
+  }
   function stat(m, ok) { const s = S.stats[m] || (S.stats[m] = { ok: 0, n: 0 }); s.n++; if (ok) s.ok++; S.answered++; }
   const nodeKey = (m, i) => `${m}-${i}`;
   function nextNode() {
@@ -505,7 +518,7 @@
     if (X.checked || X.sel === null) return;
     const c = X.cards[X.i], ok = X.sel === c.a; X.checked = true;
     X.n++; if (ok) X.ok++; X.log.push({ m: c.m, ok, d: c.d });
-    stat(c.m, ok);
+    stat(c.m, ok); markSeen(c.id);
     if (c.id) { const w = S.wrong.indexOf(c.id); if (ok && w > -1) S.wrong.splice(w, 1); if (!ok && w < 0) S.wrong.push(c.id); }
     if (X.adaptive) X.level = Math.max(1, Math.min(3, X.level + (ok ? 1 : -1)));
     if (X.silent) { save(); return setTimeout(advance, 120); }
@@ -583,7 +596,7 @@
     const m = modById(id); if (!m) return R.learn();
     const pool = NX.vocab.filter(v => v.m === id);
     /* checkpoint climbs: the 10 questions run from warm-up to exam-hard, Hebrew cards break it up */
-    const exam = byLevel(shuffle(NX.qs.filter(q => q.m === id)).slice(0, 10)).map(staticMCQ);
+    const exam = byLevel(fresh(NX.qs.filter(q => q.m === id)).slice(0, 10)).map(staticMCQ);
     const heb = uniqVocab(shuffle(pool));
     const hebQ = heb.slice(0, id === 'heb' ? 8 : 2).map(v => vocabMCQ(pool, v, 'he'));
     const cards = id === 'heb' ? shuffle(exam.concat(hebQ)) : exam.slice();
@@ -604,7 +617,7 @@
   function pickAdaptive() {
     for (let gap = 0; gap < 3; gap++) {
       const c = mockPool.filter(q => Math.abs(q.d - X.level) === gap);
-      if (c.length) { const q = pick(c); mockPool.splice(mockPool.indexOf(q), 1); return q; }
+      if (c.length) { const low = Math.min(...c.map(q => S.seen[q.id] || 0)), q = pick(c.filter(x => (S.seen[x.id] || 0) === low)); mockPool.splice(mockPool.indexOf(q), 1); return q; }
     }
     return staticMCQ(pick(NX.qs.filter(q => q.m !== 'heb')));
   }
@@ -946,7 +959,7 @@
     const maxMap = (x = {}, y = {}) => { const o = { ...x }; for (const k in y) o[k] = Math.max(o[k] || 0, y[k] || 0); return o; };
     m.xp = Math.max(a.xp || 0, b.xp || 0); m.answered = Math.max(a.answered || 0, b.answered || 0);
     m.done = { ...a.done, ...b.done }; m.plan = { ...older.plan, ...newer.plan };
-    m.box = maxMap(a.box, b.box); m.best = maxMap(a.best, b.best);
+    m.box = maxMap(a.box, b.box); m.best = maxMap(a.best, b.best); m.seen = maxMap(a.seen, b.seen);
     m.badges = [...new Set([...(a.badges || []), ...(b.badges || [])])]; m.wrong = [...new Set([...(a.wrong || []), ...(b.wrong || [])])];
     m.stats = {}; for (const k of new Set([...Object.keys(a.stats || {}), ...Object.keys(b.stats || {})])) { const x = (a.stats || {})[k], y = (b.stats || {})[k]; m.stats[k] = !x ? y : !y ? x : x.n >= y.n ? x : y; }
     m.sims = {}; for (const k of new Set([...Object.keys(a.sims || {}), ...Object.keys(b.sims || {})])) { const x = (a.sims || {})[k] || {}, y = (b.sims || {})[k] || {}; m.sims[k] = { best: Math.max(x.best || 0, y.best || 0), stars: Math.max(x.stars || 0, y.stars || 0) }; }
@@ -1222,8 +1235,9 @@
   /* games in js/games.js plug in here */
   const unitExtra = {}; /* extensions add a panel under a unit's path (Unit 9: mock tests) */
   const LEV = { R, A: window.A, unitExtra, view, img, esc, shuffle, pick, t, L, L2, meaning, SFX, play, speak, stopVoice, segments, touch, stat, confetti, toast, mascot, countUp,
-    chips, uniqVocab, modById, save, state: () => S, onLeave: fn => leaveHooks.push(fn), UNIT_COLORS };
+    chips, uniqVocab, modById, save, fresh, markSeen, state: () => S, onLeave: fn => leaveHooks.push(fn), UNIT_COLORS };
   (window.LEV_EXT || []).forEach(ext => ext(LEV));
+  seedSeen();
   route();
   cloudInit();
   idb.get(KEY).then(v => {
