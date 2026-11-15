@@ -134,6 +134,8 @@
           <div class="mx-paper-top"><span class="mx-num">${m.focus ? '★' : m.id}</span><div><h3>${esc(L2(m.t))}</h3><small>${m.focus ? T('Your weakest and untried areas', 'Tus áreas más débiles y sin probar') : m.fresh ? T('New cases · 5 stations · 75 min', 'Casos nuevos · 5 estaciones · 75 min') : T('5 stations · 75 minutes', '5 estaciones · 75 minutos')}</small></div></div>
           <div class="mx-icons">${ids.map(id => img(stById(id).img)).join('')}${img('clipboard')}</div>
           ${b ? `<span class="mx-stamp mini ${b >= PASS ? 'pass' : 'fail'}">${b >= PASS ? T('PASS', 'APROBADO') : T('NOT YET', 'AÚN NO')} · ${b}%</span><span class="mx-retake">↻ ${T('Retake: new questions', 'Repetir: preguntas nuevas')}</span>` : `<span class="mx-go">${T('Start', 'Empezar')} →</span>`}</a>`; }).join('')}</div>
+      ${Object.keys(S().mockReview || {}).length ? `<h2 class="sec">${img('review')} ${T('Review your mistakes', 'Revisa tus errores')}</h2><div class="mx-rv-list">${NX.mocks.filter(m => (S().mockReview || {})[m.id]).map(m => { const rv = S().mockReview[m.id];
+        return `<a class="card mx-rv-link tilt" href="#/mockreview/${m.id}"><span class="mx-num">${m.focus ? '★' : m.id}</span><div><b>${esc(L2(m.t))}</b><small>${rv.d.split('-').reverse().slice(0, 2).join('.')} · ${rv.total}/100</small></div><em>${missCount(rv)} ${T('to review', 'por revisar')} →</em></a>`; }).join('')}</div>` : ''}
       <a class="card mx-cheat-cta tilt" href="#/cheats">${img('bulb', 'wiggle')}<div><b>${T('Cheat sheets', 'Chuletas')}</b><span>${T('The numbers and rules to read right before the exam', 'Las cifras y reglas para leer justo antes del examen')}</span></div><span class="go">→</span></a>`);
     bars();
   };
@@ -168,7 +170,7 @@
     const st = stById(MX.ids[MX.k]), k = MX.k;
     LEV.runStation(Object.assign({}, st, { mins: 15 }), {
       crumb: crumb(k + 1), next: k < 3 ? T('Next station', 'Siguiente estación') : T('Station 5: knowledge test', 'Estación 5: prueba de conocimientos'),
-      onResult: r => { if (MX) MX.res[k] = r; }, onNext: () => { if (!MX) return R.mocks(); MX.k = k + 1; door(); } });
+      exam: true, onResult: r => { if (MX) MX.res[k] = r; }, onNext: () => { if (!MX) return R.mocks(); MX.k = k + 1; door(); } });
   };
 
   /* ---------- station 5: 30 questions, 15 minutes ---------- */
@@ -234,11 +236,37 @@
     const skills = procs.length ? [{ ic: 'syringe', txt: T(`Skills you will use inside the cases, not passed yet: ${procs.map(s => L2(s.t)).join(', ')}`, `Técnicas que usarás dentro de los casos, aún sin superar: ${procs.map(s => L2(s.t)).join(', ')}`), href: '#/stations/proc' }] : [];
     return [...st, ...k5, ...weak, ...skills];
   }
+  /* the review of one attempt: every station mistake and every missed question, saved as text so she can reopen it */
+  function buildReview(total, sc) {
+    return { d: new Date().toISOString().slice(0, 10), total, sc,
+      st: MX.ids.map((id, i) => { const r = MX.res[i] || { pct: 0, crit: [], miss: [] }; return { id, t: L2(stById(id).t), slot: L2(NX.mockSlots[i].t), pct: r.pct, crit: r.crit || [], miss: r.miss || [] }; }),
+      k5: { ok: MX.k5.ok, n: MX.k5.n, miss: MX.k5.wrong.map(({ q, pick }) => ({ m: q.m, topic: topicLabel(q.m), q: q.q, mine: pick !== undefined ? q.o[pick] : T('no answer', 'sin respuesta'), best: q.o[q.a], why: q.w })) } };
+  }
+  const missCount = rv => rv.st.reduce((a, x) => a + x.miss.length, 0) + rv.k5.miss.length;
+  function reviewHtml(rv) {
+    const item = (x, topic) => `<div class="mx-rq ${x.crit ? 'crit' : ''}">${topic ? `<span class="mxk-topic">${img(topicImg(x.m))}${esc(x.topic)}</span>` : ''}<p class="q">${chips(esc(x.q))}</p>
+      ${x.mine ? `<p class="ans bad">✗ ${T('You', 'Tú')}: ${chips(esc(x.mine))}</p>` : ''}${x.best ? `<p class="ans ok">✓ ${T('Best', 'Mejor')}: ${chips(esc(x.best))}</p>` : ''}${x.why ? `<p class="why">💡 ${chips(esc(x.why))}</p>` : ''}</div>`;
+    const stations = rv.st.filter(x => x.miss.length).map(x => `<div class="mx-rv-st"><h4>${esc(x.slot)} · ${esc(x.t)} <em>${x.pct}%</em></h4>${x.miss.map(m => item(m)).join('')}
+      <a class="btn ghost small" href="#/station/${x.id}">${T('Practise this station', 'Practicar esta estación')}</a></div>`).join('');
+    return `<section class="card mx-review" id="mx-mistakes"><h2>${img('review')} ${T('Your mistakes', 'Tus errores')} (${missCount(rv)})</h2>
+      ${missCount(rv) ? `<p class="fine">${T('Each one shows your answer, the best answer and why. Read the 💡 lines: that is what to do next time.', 'Cada uno muestra tu respuesta, la mejor y por qué. Lee las líneas 💡: es lo que harás la próxima vez.')}</p>` : `<p class="mx-allgood">🌟 ${T('No mistakes in this attempt.', 'Ningún error en este intento.')}</p>`}
+      ${stations ? `<h3 class="mx-rv-h">${T('Patient stations', 'Estaciones de pacientes')}</h3>${stations}` : ''}
+      ${rv.k5.miss.length ? `<h3 class="mx-rv-h">${T('Knowledge test', 'Prueba de conocimientos')} · ${rv.k5.ok}/${rv.k5.n}</h3>${rv.k5.miss.map(m => item(m, true)).join('')}
+        <a class="btn blue small" href="#/review">${T('Practise the missed questions again', 'Practicar otra vez las preguntas falladas')}</a>` : ''}</section>`;
+  }
+  R.mockreview = n => {
+    const mk = mockById(n), rv = ((S().mockReview || {})[n]); if (!mk) return R.mocks();
+    view(`<a class="crumb" href="#/mocks">← ${T('Mock tests', 'Exámenes de prueba')}</a>
+      <section class="card mx-rv-head">${img('review', 'head-img float')}<div><h1>${esc(L2(mk.t))}</h1><p>${rv ? `${rv.d.split('-').reverse().slice(0, 2).join('.')} · ${rv.total}/100 · ${missCount(rv)} ${T('mistakes', 'errores')}` : T('No saved review yet.', 'Aún no hay revisión guardada.')}</p></div></section>
+      ${rv ? reviewHtml(rv) : `<section class="card"><p>${T('Reviews are saved from now on, each time you finish this mock. Missed knowledge-test questions from earlier attempts are in Practice → Fix mistakes.', 'Las revisiones se guardan a partir de ahora, cada vez que termines este examen. Las preguntas falladas de intentos anteriores están en Practicar → Corregir errores.')}</p><a class="btn blue" href="#/review">${T('Fix mistakes', 'Corregir errores')}</a></section>`}
+      <div class="row mx-end"><button class="btn green" onclick="A.go('#/mocktest/${mk.id}')">${T('Try this mock again', 'Repetir este examen')}</button></div>`);
+  };
   function results() {
     const sc = [0, 1, 2, 3].map(i => MX.res[i] ? MX.res[i].pct : 0).concat(MX.k5.pct);
     const total = Math.round(sc.reduce((a, b) => a + b, 0) / 5), pass = total >= PASS, mk = mockById(MX.n);
     const b = S().best; b['mx' + MX.n] = Math.max(b['mx' + MX.n] || 0, total);
     S().mockLast = { n: MX.n, total, d: new Date().toISOString().slice(0, 10), sc };
+    const rv = buildReview(total, sc); (S().mockReview || (S().mockReview = {}))[MX.n] = rv; const nMiss = missCount(rv);
     touch(30 + Math.round(total / 4)); save();
     const mins = Math.round((Date.now() - MX.start) / 60000), focus = focusList();
     /* gauge: a half circle, with a tick at the pass mark */
@@ -251,6 +279,7 @@
         <div class="mx-stamp ${pass ? 'pass' : 'fail'}">${pass ? T('PASS', 'APROBADO') : T('NOT YET', 'AÚN NO')}</div>
         <h1>${esc(L2(mk.t))}</h1><p class="fine">${mins} min · ${T('all five stations combined, equal weights (the Ministry does not publish its weighting)', 'las cinco estaciones combinadas, mismo peso (el Ministerio no publica su ponderación)')}</p>
         ${mascot(pass ? 'happy' : 'sad', 'big jump')}</section>
+      ${nMiss ? `<button class="btn red mx-misslink" onclick="document.getElementById('mx-mistakes').scrollIntoView({ behavior: 'smooth', block: 'start' })">📋 ${T(`See your ${nMiss} mistakes and what to do`, `Ver tus ${nMiss} errores y qué hacer`)} ↓</button>` : ''}
       <h2 class="sec">${img('sim')} ${T('Station by station', 'Estación por estación')}</h2>
       <section class="card mx-rows">${MX.ids.map((id, i) => { const r = MX.res[i] || { pct: 0, crit: [], timeUp: false }, st = stById(id);
         return `<div class="mx-row ${tone(r.pct)}"><span class="mx-n">${i + 1}</span>${img(st.img)}<div><b>${esc(L2(st.t))}</b><small>${esc(L2(NX.mockSlots[i].t))}${r.crit.length ? ` · <em class="critline">⚠ ${esc(r.crit.join(' · '))}</em>` : ''}${r.timeUp ? ` · ⏰` : ''}</small><div class="mx-bar"><i data-w="${r.pct}"></i></div></div><em>${r.pct}%</em><a class="btn ghost small" href="#/station/${id}">${T('Redo', 'Repetir')}</a></div>`; }).join('')}
@@ -259,9 +288,7 @@
       <h2 class="sec">${img('target')} ${T('What to focus on now', 'En qué centrarte ahora')}</h2>
       <section class="card mx-focus">${focus.length ? `<ol>${focus.map((f, i) => `<li style="--d:${i * 90}ms"><a href="${f.href}">${img(f.ic)}<span>${esc(f.txt)}</span><b>→</b></a></li>`).join('')}</ol>`
         : `<p class="mx-allgood">🌟 ${T('Nothing below 70% and no critical errors. Keep the red lines out loud and read the cheat sheets the night before.', 'Nada por debajo de 70% y sin errores críticos. Sigue diciendo las líneas rojas en voz alta y lee las chuletas la noche antes.')}</p>`}</section>
-      ${MX.k5.wrong.length ? `<details class="card mx-review"><summary>${img('review')} ${T('Review the questions you missed', 'Repasa las preguntas que fallaste')} (${MX.k5.wrong.length})</summary>
-        ${MX.k5.wrong.map(({ q, pick }) => `<div class="mx-rq"><span class="mxk-topic">${img(topicImg(q.m))}${esc(topicLabel(q.m))}</span><p>${chips(esc(q.q))}</p>
-          <p class="ans ok">✓ ${chips(esc(q.o[q.a]))}</p>${pick !== undefined ? `<p class="ans bad">✗ ${chips(esc(q.o[pick]))}</p>` : `<p class="ans bad">✗ ${T('no answer', 'sin respuesta')}</p>`}<p class="why">${chips(esc(q.w))}</p></div>`).join('')}</details>` : ''}
+      ${reviewHtml(rv)}
       <div class="row mx-end"><button class="btn green" onclick="A.go('#/mocktest/${MX.n}')">${T('Try this mock again', 'Repetir este examen')}</button><a class="btn ghost" href="#/mocks">${T('All mock tests', 'Todos los exámenes')}</a></div>`);
     document.querySelectorAll('[data-c]').forEach(el => countUp(el, +el.dataset.c));
     requestAnimationFrame(() => { const a = $('#mxarc'); if (a) a.style.strokeDashoffset = ARC * (1 - total / 100); });

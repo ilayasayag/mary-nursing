@@ -1161,7 +1161,7 @@
     stopTimer(); stopVoice(); cancelAnimationFrame(ecgRAF);
     leaveHooks.splice(0).forEach(fn => { try { fn(); } catch (e) { /* ignore */ } });
     const [, page, a, b] = (location.hash || '#/').split('/');
-    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', stations: 'sim', station: 'sim', examday: 'sim', calc: 'sim', redlines: 'sim', mocks: 'sim', mocktest: 'sim', cheats: 'sim', ulpan: 'ulpan', ulesson: 'ulpan', utest: 'ulpan', uweak: 'ulpan', uplace: 'ulpan', ugame: 'ulpan', utalk: 'ulpan', uexam: 'ulpan', udeck: 'ulpan', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', triage: 'practice', medpass: 'practice', vitals: 'practice', rain: 'practice', memory: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
+    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', stations: 'sim', station: 'sim', examday: 'sim', calc: 'sim', redlines: 'sim', mocks: 'sim', mocktest: 'sim', mockreview: 'sim', cheats: 'sim', ulpan: 'ulpan', ulesson: 'ulpan', utest: 'ulpan', uweak: 'ulpan', uplace: 'ulpan', ugame: 'ulpan', utalk: 'ulpan', uexam: 'ulpan', udeck: 'ulpan', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', triage: 'practice', medpass: 'practice', vitals: 'practice', rain: 'practice', memory: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
     document.querySelectorAll('[data-nav]').forEach(x => x.classList.toggle('active', x.dataset.nav === tab));
     $('#app').classList.toggle('wide', tab !== 'learn' && tab !== 'me');
     (R[page] || R.learn)(a, b);

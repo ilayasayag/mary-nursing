@@ -92,6 +92,9 @@
     ({ open: drawTalk, close: drawTalk, step: drawStep, calc: drawCalc, teach: drawTeach, back: drawBack, order: drawOrder, sbar: drawSbar, dq: drawDq })[part.p](part);
     if (S().autoRead && readNow) setTimeout(() => { if (ST && ST.parts[ST.i] === part) say(readNow); }, 450);
   }
+  /* exam mode (mock tests): no right/wrong during the station, like the real exam; everything is reviewed at the end */
+  const exam = () => !!(HOOK && HOOK.exam);
+  const saved = () => `<div class="simfb neutral pop"><p>✓ ${T('Answer saved. You will see the feedback at the end, like the real exam.', 'Respuesta guardada. Verás la corrección al final, como en el examen real.')}</p>${nextBtn()}</div>`;
   const nextBtn = (cls = 'green') => `<button class="btn ${cls}" onclick="A.stNext()">${T('Next', 'Siguiente')} →</button>`;
   A.stNext = () => { ST.i++; drawPart(); };
   const addPts = (got, max) => { ST.pts += Math.max(0, got); ST.max += max; };
@@ -128,8 +131,10 @@
   A.stTalkDone = () => {
     const part = ST.parts[ST.i], items = NX.redlines[part.p]; micStop();
     let got = 0; items.forEach(([id, cr, lab]) => { if (part.ticks[id]) got++; else if (cr) critical(L2(lab)); });
-    addPts(got, items.length); ST.log.push({ p: part.p, got, max: items.length });
     const missed = items.filter(([id]) => !part.ticks[id]);
+    addPts(got, items.length); ST.log.push({ p: part.p, got, max: items.length, miss: missed.map(x => L2(x[2])) });
+    document.querySelectorAll('#talkcheck input').forEach(x => x.disabled = true);
+    if (exam()) { $('#talkbtns').innerHTML = saved(); return; }
     $('#talkbtns').innerHTML = `<div class="simfb ${missed.length ? (missed.some(x => x[1]) ? 'bad' : 'meh') : 'good'} pop"><b>${got}/${items.length}</b>
       <p>${missed.length ? T('Say next time: ', 'La próxima vez di: ') + missed.map(x => L2(x[2])).join(' · ') : T('Every red line said out loud. Examiners can only score what they hear.', 'Todas las líneas rojas dichas en voz alta. Solo se puntúa lo que se oye.')}</p>${nextBtn(missed.some(x => x[1]) ? 'red' : 'green')}</div>`;
     document.querySelectorAll('#talkcheck input').forEach(x => x.disabled = true);
@@ -152,6 +157,7 @@
     const part = ST.parts[ST.i], c = part.s.c[k], sc = c[0], best = part.s.c.findIndex(x => x[0] === 2);
     addPts(sc, 2); ST.log.push({ p: 'step', sc, s: part.s, k });
     if (sc === -1) critical(L2([c[1], c[2]]));
+    if (exam()) { document.querySelectorAll('#step .choice').forEach(b => { b.disabled = true; b.classList.toggle('sel', +b.dataset.k === k); }); SFX.tap(); $('#simfb').innerHTML = saved(); return; }
     document.querySelectorAll('#step .choice').forEach(b => { b.disabled = true; const j = +b.dataset.k; if (j === best) b.classList.add('right'); else if (j === k) b.classList.add(sc === 1 ? 'meh' : 'bad'); });
     if (sc === 2) SFX.ok(); else if (sc === -1) { SFX.alarm(); const m = $('.st-mon'); if (m) m.classList.add('crit'); } else SFX.no();
     const label = sc === 2 ? '+2' : sc === 1 ? '+1' : sc === 0 ? '0' : T('⚠ Unsafe: critical error', '⚠ Inseguro: error crítico');
@@ -198,7 +204,8 @@
   A.stTeachDone = () => {
     const part = ST.parts[ST.i], c = teachById(part.id), need = c.pts.filter(p => p[0]).length; part.done = true;
     const got = part.sel.filter(k => c.pts[k][0]).length;
-    addPts(got, need); ST.log.push({ p: 'teach', got, max: need });
+    addPts(got, need); ST.log.push({ p: 'teach', got, max: need, id: part.id, sel: part.sel.slice() });
+    if (exam()) { document.querySelectorAll('.pick').forEach(b => { b.disabled = true; }); SFX.tap(); $('#simfb').innerHTML = saved(); return; }
     document.querySelectorAll('.pick').forEach(b => { const k = +b.dataset.k, good = c.pts[k][0]; b.disabled = true; b.classList.add(good ? 'right' : part.sel.includes(k) ? 'bad' : 'off'); });
     got === need ? SFX.ok() : SFX.no();
     $('#simfb').innerHTML = `<div class="simfb ${got === need ? 'good' : got >= need - 1 ? 'meh' : 'bad'} pop"><b>${got}/${need}</b><p>${T('Green = must teach. Red = wrong advice you chose.', 'Verde = debes enseñarlo. Rojo = consejo erróneo que elegiste.')}</p>${nextBtn()}</div>`;
@@ -281,11 +288,25 @@
   }
   A.stDq = k => {
     const part = ST.parts[ST.i], r = part.r, ok = k === r[0];
-    addPts(ok ? 1 : 0, 1); ST.log.push({ p: 'dq', ok });
+    addPts(ok ? 1 : 0, 1); ST.log.push({ p: 'dq', ok, r, k });
+    if (exam()) { document.querySelectorAll('#step .choice').forEach(b => { b.disabled = true; b.classList.toggle('sel', +b.dataset.k === k); }); SFX.tap(); $('#simfb').innerHTML = saved(); return; }
     document.querySelectorAll('#step .choice').forEach(b => { b.disabled = true; const j = +b.dataset.k; if (j === r[0]) b.classList.add('right'); else if (j === k) b.classList.add('bad'); });
     ok ? SFX.ok() : SFX.no();
     $('#simfb').innerHTML = `<div class="simfb ${ok ? 'good' : 'bad'} pop"><b>${ok ? '✓' : '✗'}</b><p>${esc(L2([r[4], r[5]]))}</p>${nextBtn(ok ? 'green' : 'red')}</div>`;
   };
+
+  /* what she got wrong in this station, as text for the end-of-mock review */
+  function mistakes() {
+    const out = [];
+    ST.log.forEach(l => {
+      if ((l.p === 'open' || l.p === 'close') && l.miss && l.miss.length) out.push({ q: l.p === 'open' ? T('Red lines on entering', 'Líneas rojas al entrar') : T('Red lines on leaving', 'Líneas rojas al salir'), best: l.miss.join(' · '), why: T('Not said out loud. Examiners score only what they hear.', 'No lo dijiste en voz alta. Solo se puntúa lo que se oye.') });
+      if (l.p === 'step' && l.sc < 2) { const c = l.s.c, b = c.find(x => x[0] === 2); out.push({ q: L2(l.s.s), mine: L2([c[l.k][1], c[l.k][2]]), best: L2([b[1], b[2]]), why: L2([c[l.k][3], c[l.k][4]]) + ' ' + L2([b[3], b[4]]), crit: l.sc === -1 }); }
+      if (l.p === 'dq' && !l.ok) out.push({ q: L2(l.r[1]), mine: es() ? l.r[3][l.k] : l.r[2][l.k], best: es() ? l.r[3][l.r[0]] : l.r[2][l.r[0]], why: L2([l.r[4], l.r[5]]) });
+      if (l.p === 'teach' && l.got < l.max) { const c = teachById(l.id);
+        out.push({ q: T('Teaching points', 'Puntos de educación'), mine: l.sel.filter(k => !c.pts[k][0]).map(k => L2([c.pts[k][1], c.pts[k][2]])).join(' · '), best: c.pts.filter((p, k) => p[0] && !l.sel.includes(k)).map(p => L2([p[1], p[2]])).join(' · '), why: '' }); }
+    });
+    return out;
+  }
 
   /* ---------- result of one station ---------- */
   function finishStation() {
@@ -298,9 +319,17 @@
     if (st.kind !== 'drill') {
       const r = rec()[st.id] || {}; rec()[st.id] = { best: Math.max(r.best || 0, pct), pass: !!(r.pass || pass), n: (r.n || 0) + 1, last: pct };
     }
-    save(); touch(10 + Math.round(pct / 10)); pass ? (SFX.win(), confetti()) : SFX.no();
+    save(); touch(10 + Math.round(pct / 10)); if (!exam()) pass ? (SFX.win(), confetti()) : SFX.no();
     if (EXD) EXD.res.push({ id: st.id, pct, pass, crit: ST.crit.slice(), timeUp: !!ST.timeUp });
-    if (HOOK) HOOK.onResult({ id: st.id, pct, pass, crit: ST.crit.slice(), timeUp: !!ST.timeUp });
+    if (HOOK) HOOK.onResult({ id: st.id, pct, pass, crit: ST.crit.slice(), timeUp: !!ST.timeUp, miss: mistakes() });
+    if (exam()) {
+      SFX.pop();
+      view(`${crumb()}<section class="card center-card st-result exam-done pop">${mascot('happy', 'big bounce')}<h1>${L2(st.t)}</h1>
+        <p class="verdict">${ST.timeUp ? '⏰ ' + T('Time is up for this station.', 'Se acabó el tiempo de esta estación.') : '✓ ' + T('Station complete.', 'Estación terminada.')}</p>
+        <p class="fine">${T('Scores and every correction come at the end, like the real exam.', 'Las notas y todas las correcciones llegan al final, como en el examen real.')}</p>
+        <button class="btn green big" onclick="A.stHookNext()">${HOOK.next} →</button></section>`);
+      ST = Object.assign(ST, { finished: true }); return;
+    }
     const nextLabel = HOOK ? HOOK.next : EXD ? (EXD.k + 1 < EXD.ids.length ? T('Next station', 'Siguiente estación') : T('See results', 'Ver resultados')) : '';
     view(`${crumb()}<section class="card debrief st-result"><div class="db-head">${mascot(pass ? 'happy' : 'sad', 'big jump')}<div>
         <h1>${L2(st.t)}</h1><p class="verdict ${pass ? 'pass' : 'fail'}">${pass ? T('Station passed', 'Estación superada') : T('Not passed yet', 'Aún no superada')}</p>

@@ -207,3 +207,22 @@
 .mx-mini { position: relative; }
 .mx-mini .mx-newtag { top: -8px; right: -4px; font-size: .62rem; padding: 1px 7px; }
 .mx-retake { justify-self: start; font-size: .78rem; font-weight: 800; color: var(--blue-d); }
+/* review of an attempt */
+.mx-misslink { display: block; width: 100%; margin: 14px 0 0; }
+.mx-review h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; }
+.mx-review h2 img { width: 32px; height: 32px; }
+.mx-rv-h { margin: 16px 0 6px; padding-top: 10px; border-top: 2px solid var(--line); }
+.mx-rv-st { margin-bottom: 12px; }
+.mx-rv-st h4 { margin: 8px 0 4px; } .mx-rv-st h4 em { font-style: normal; color: var(--muted); }
+.mx-rq { border-left: 4px solid var(--orange); background: var(--soft); border-radius: 10px; padding: 8px 12px; margin: 8px 0; }
+.mx-rq.crit { border-left-color: var(--red); }
+.mx-rq .q { font-weight: 800; margin: 2px 0 6px; }
+.mx-rq .ans { margin: 3px 0; font-weight: 700; } .mx-rq .ans.ok { color: var(--green-d); } .mx-rq .ans.bad { color: var(--red-d); }
+.mx-rq .why { margin: 6px 0 0; color: var(--ink); font-size: .92rem; }
+.mx-rv-head { display: flex; gap: 14px; align-items: center; } .mx-rv-head h1 { margin: 0; } .mx-rv-head p { margin: 4px 0 0; color: var(--muted); font-weight: 700; }
+.mx-rv-list { display: grid; gap: 10px; }
+.mx-rv-link { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); }
+.mx-rv-link b { display: block; } .mx-rv-link small { color: var(--muted); font-weight: 700; }
+.mx-rv-link em { margin-left: auto; font-style: normal; font-weight: 800; color: var(--red-d); }
+.simfb.neutral { background: var(--blue-l); border-color: var(--blue); }
+.exam-done .verdict { font-weight: 800; }
