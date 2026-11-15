@@ -201,3 +201,9 @@
 }
 @media (prefers-reduced-motion: reduce) { .mx-track i.cur, .mx-interp span { animation: none; } }
 .mxk-new { margin-left: 6px; padding: 1px 8px; border-radius: 99px; background: var(--green); color: #fff; font-style: normal; font-size: .66rem; letter-spacing: .06em; animation: mxDrop .4s both; }
+.mx-paper.fresh { border-left-color: var(--green); }
+.mx-paper.fresh .mx-num, .mx-mini.fresh .mx-num { background: var(--green); box-shadow: 0 3px 0 var(--green-d); }
+.mx-newtag { position: absolute; top: 8px; right: 8px; z-index: 1; padding: 2px 10px; border-radius: 99px; background: var(--red); color: #fff; font: 700 .72rem var(--display); letter-spacing: .06em; animation: mxPulse 1.6s ease-in-out infinite; }
+.mx-mini { position: relative; }
+.mx-mini .mx-newtag { top: -8px; right: -4px; font-size: .62rem; padding: 1px 7px; }
+.mx-retake { justify-self: start; font-size: .78rem; font-weight: 800; color: var(--blue-d); }

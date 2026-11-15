@@ -4,7 +4,7 @@
 NX.addModule({
   id: 'exam', icon: '🏁',
   t: ['Exam Ready: 18 November', 'Lista para el examen: 18 de noviembre'],
-  b: ['The real format, station by station: 5 stations of 15 minutes, the knowledge test, AHA 2025 CPR, and 4 mock tests.', 'El formato real, estación por estación: 5 estaciones de 15 minutos, la prueba de conocimientos, la RCP AHA 2025 y 4 exámenes de prueba.'],
+  b: ['The real format, station by station: 5 stations of 15 minutes, the knowledge test, AHA 2025 CPR, and 6 mock tests.', 'El formato real, estación por estación: 5 estaciones de 15 minutos, la prueba de conocimientos, la RCP AHA 2025 y 6 exámenes de prueba.'],
   exam: 'Simulation licensure exam, 18.11.2026',
   lessons: [
     { t: ['Your exam on 18 November', 'Tu examen del 18 de noviembre'],

@@ -122,18 +122,18 @@
     const focusIds = idsFor(4);
     view(`<a class="crumb" href="#/">← ${T('Unit 9', 'Unidad 9')}</a>
       <section class="card mx-hero"><div class="mx-hero-txt"><small>${dl > 0 ? `${dl} ${T('days to go', 'días')} · ` : ''}18.11.2026 · MSR</small><h1>${T('Mock tests', 'Exámenes de prueba')}</h1>
-        <p>${T('Built like the real exam: 5 stations of 15 minutes, an interpreter in each, pass at 60.', 'Como el examen real: 5 estaciones de 15 minutos, intérprete en cada una, aprobado con 60.')}</p></div>${mascot('happy', 'big bounce')}
+        <p>${T('Built like the real exam: 5 stations of 15 minutes, an interpreter in each, pass at 60. Every retake brings knowledge-test questions you have not seen yet.', 'Como el examen real: 5 estaciones de 15 minutos, intérprete en cada una, aprobado con 60. Cada vez que repites, la prueba de conocimientos trae preguntas que aún no has visto.')}</p></div>${mascot('happy', 'big bounce')}
         <div class="mx-format">${NX.mockSlots.map((s, i) => `<div class="mx-slot" style="--d:${i * 90}ms"><b>${i + 1}</b>${img(s.icon)}<small>${esc(L2(s.t))}</small></div>`).join('')}</div></section>
       <h2 class="sec">${img('target')} ${T('Where you stand', 'Dónde estás')}</h2>
       <section class="card mx-ready"><p class="fine">${T('From all your practice so far: lessons, quizzes and stations in each area.', 'De toda tu práctica hasta ahora: lecciones, tests y estaciones de cada área.')}</p>
         ${rd.map((r, i) => `<div class="mx-rrow ${tone(r.p)}">${img(NX.mockSlots[i].icon)}<span>${i + 1} · ${esc(L2(NX.mockSlots[i].t))}${r.n ? `<em>${r.n} ${T('new to try', 'por probar')}</em>` : ''}</span>
           <div class="mx-bar"><i data-w="${r.p || 0}"></i></div><b>${r.p === null ? '–' : r.p + '%'}</b></div>`).join('')}</section>
-      <h2 class="sec">${img('trophy')} ${T('Your 4 mock tests', 'Tus 4 exámenes de prueba')}</h2>
+      <h2 class="sec">${img('trophy')} ${T(`Your ${NX.mocks.length} mock tests`, `Tus ${NX.mocks.length} exámenes de prueba`)}</h2>
       <div class="mx-papers">${NX.mocks.map((m, i) => { const b = best(m.id), ids = m.focus ? focusIds : m.st;
-        return `<a class="card mx-paper tilt ${m.focus ? 'focus' : ''}" href="#/mocktest/${m.id}" style="--d:${i * 80}ms">
-          <div class="mx-paper-top"><span class="mx-num">${m.focus ? '★' : m.id}</span><div><h3>${esc(L2(m.t))}</h3><small>${m.focus ? T('Your weakest and untried areas', 'Tus áreas más débiles y sin probar') : T('5 stations · 75 minutes', '5 estaciones · 75 minutos')}</small></div></div>
+        return `<a class="card mx-paper tilt ${m.focus ? 'focus' : ''} ${m.fresh ? 'fresh' : ''}" href="#/mocktest/${m.id}" style="--d:${i * 80}ms">${m.fresh && !b ? `<span class="mx-newtag">${T('NEW', 'NUEVO')}</span>` : ''}
+          <div class="mx-paper-top"><span class="mx-num">${m.focus ? '★' : m.id}</span><div><h3>${esc(L2(m.t))}</h3><small>${m.focus ? T('Your weakest and untried areas', 'Tus áreas más débiles y sin probar') : m.fresh ? T('New cases · 5 stations · 75 min', 'Casos nuevos · 5 estaciones · 75 min') : T('5 stations · 75 minutes', '5 estaciones · 75 minutos')}</small></div></div>
           <div class="mx-icons">${ids.map(id => img(stById(id).img)).join('')}${img('clipboard')}</div>
-          ${b ? `<span class="mx-stamp mini ${b >= PASS ? 'pass' : 'fail'}">${b >= PASS ? T('PASS', 'APROBADO') : T('NOT YET', 'AÚN NO')} · ${b}%</span>` : `<span class="mx-go">${T('Start', 'Empezar')} →</span>`}</a>`; }).join('')}</div>
+          ${b ? `<span class="mx-stamp mini ${b >= PASS ? 'pass' : 'fail'}">${b >= PASS ? T('PASS', 'APROBADO') : T('NOT YET', 'AÚN NO')} · ${b}%</span><span class="mx-retake">↻ ${T('Retake: new questions', 'Repetir: preguntas nuevas')}</span>` : `<span class="mx-go">${T('Start', 'Empezar')} →</span>`}</a>`; }).join('')}</div>
       <a class="card mx-cheat-cta tilt" href="#/cheats">${img('bulb', 'wiggle')}<div><b>${T('Cheat sheets', 'Chuletas')}</b><span>${T('The numbers and rules to read right before the exam', 'Las cifras y reglas para leer justo antes del examen')}</span></div><span class="go">→</span></a>`);
     bars();
   };
@@ -298,7 +298,7 @@
 
   /* ---------- Unit 9 on the Learn path ---------- */
   LEV.unitExtra.exam = () => `<div class="mx-unit">
-      ${NX.mocks.map((m, i) => { const b = best(m.id); return `<a class="mx-mini tilt ${m.focus ? 'focus' : ''}" href="#/mocktest/${m.id}" style="--d:${i * 70}ms"><span class="mx-num">${m.focus ? '★' : m.id}</span><small>${esc(L2(m.t))}</small>${b ? `<em class="${b >= PASS ? 'pass' : 'fail'}">${b}%</em>` : `<em>${T('start', 'empezar')}</em>`}</a>`; }).join('')}
-      <a class="mx-mini cheat tilt" href="#/cheats" style="--d:280ms">${img('bulb')}<small>${T('Cheat sheets', 'Chuletas')}</small><em>${T('read', 'leer')}</em></a>
+      ${NX.mocks.map((m, i) => { const b = best(m.id); return `<a class="mx-mini tilt ${m.focus ? 'focus' : ''} ${m.fresh ? 'fresh' : ''}" href="#/mocktest/${m.id}" style="--d:${i * 70}ms">${m.fresh && !b ? `<span class="mx-newtag">${T('NEW', 'NUEVO')}</span>` : ''}<span class="mx-num">${m.focus ? '★' : m.id}</span><small>${esc(L2(m.t))}</small>${b ? `<em class="${b >= PASS ? 'pass' : 'fail'}">${b}% · ↻</em>` : `<em>${T('start', 'empezar')}</em>`}</a>`; }).join('')}
+      <a class="mx-mini cheat tilt" href="#/cheats" style="--d:${NX.mocks.length * 70}ms">${img('bulb')}<small>${T('Cheat sheets', 'Chuletas')}</small><em>${T('read', 'leer')}</em></a>
     </div><a class="mx-unit-all" href="#/mocks">${T('All mock tests and where you stand', 'Todos los exámenes y dónde estás')} →</a>`;
 });
