@@ -147,6 +147,10 @@ for (const m of NX.mocks || []) { pair(`mock ${m.id}`, m.t, 'title'); if (m.st.l
 (NX.mockSlots || []).forEach((sl, i) => { imgOk(`mock slot ${i}`, sl.icon); sl.ids.forEach(id => { if (!S.some(s => s.id === id)) err(`mock slot ${i}`, `unknown station ${id}`); }); });
 (NX.mocks || []).filter(m => !m.focus).forEach(m => m.st.forEach((id, i) => { if (!NX.mockSlots[i].ids.includes(id)) err(`mock ${m.id}`, `${id} is not a station for slot ${i + 1}`); }));
 for (const c of NX.cheats || []) { imgOk(`cheat ${c.id}`, c.img); pair(`cheat ${c.id}`, c.t, 'title'); c.rows.forEach((r, k) => { if (r.length !== 4 || !filled(r[0]) || !filled(r[2]) || filled(r[1]) !== filled(r[3])) err(`cheat ${c.id} row ${k}`, 'needs [en, valueEn, es, valueEs]'); }); }
+(NX.sata || []).forEach(x => { const w = `select-all ${x.id}`; pair(w, x.q, 'question'); pair(w, x.w, 'explanation');
+  if (!['psych', 'pharm', 'law'].includes(x.m)) err(w, 'topic must be a station-5 topic');
+  if (x.o.filter(o => o[2]).length < 2 || x.o.filter(o => !o[2]).length < 2) err(w, 'needs at least 2 right and 2 wrong options');
+  x.o.forEach((o, k) => { if (!filled(o[0]) || !filled(o[1])) err(w, `option ${k} needs [en, es, correct]`); }); });
 (NX.cheatsHe || []).forEach((h, k) => { if (h.length !== 4 || h.some(x => !filled(x))) err(`cheat he ${k}`, 'needs [he, translit, en, es]'); });
 /* Ulpan course */
 const UL = window.UL;

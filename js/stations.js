@@ -143,6 +143,7 @@
 
   /* clinical step: answer in your own words first, then choose */
   function drawStep(part) {
+    if (openMode()) return drawOpenStep(part);
     const s = part.s; ST.v = s.v || ST.v;
     readNow = L2(s.s);
     const label = (LEV.t('skills') || {})[s.k] || T('Decision', 'Decisión');
@@ -153,6 +154,40 @@
   const opts = part => { part.order = part.order || shuffle(part.s.c.map((_, k) => k));
     return `<div class="choices">${part.order.map((k, n) => `<button class="choice" data-k="${k}" onclick="A.stPick(${k})"><kbd>${n + 1}</kbd><span>${chips(esc(L2([part.s.c[k][1], part.s.c[k][2]])))}</span></button>`).join('')}</div>`; };
   A.stReveal = () => { const part = ST.parts[ST.i]; part.open = true; $('#stopts').innerHTML = opts(part); };
+
+  /* open-answer mode (Mock 7: Hard): no options. She answers in her own words, reveals the model answer and scores
+     herself as the examiner would; a missed action makes the patient worse in the next step */
+  const openMode = () => !!(HOOK && HOOK.open);
+  const worsen = (v, w) => !v || !w ? v : Object.assign({}, v, { hr: v.hr + 8 * w, spo2: v.spo2 === undefined ? undefined : Math.max(80, v.spo2 - 3 * w), rr: v.rr === undefined ? undefined : v.rr + 3 * w,
+    bp: typeof v.bp === 'string' ? v.bp.split('/').map((x, i) => Math.max(50, +x - (i ? 6 : 12) * w)).join('/') : v.bp });
+  const openBox = ph => `<textarea id="openin" class="open-in" rows="3" placeholder="${ph}"></textarea>`;
+  const worseNote = () => ST.worse ? `<p class="warnbox worse">⚠ ${T('An earlier action was missed: the patient is getting worse.', 'Se omitió una acción anterior: el paciente empeora.')}</p>` : '';
+  function drawOpenStep(part) {
+    const s = part.s; ST.v = worsen(s.v || ST.v, ST.worse || 0);
+    readNow = L2(s.s);
+    const label = (LEV.t('skills') || {})[s.k] || T('Decision', 'Decisión');
+    frame(`${top(label, s.k, 1)}${worseNote()}<p class="situation">${chips(esc(L2(s.s)))}</p>
+      <div id="stopts"><div class="gate open-gate"><p>${T('No options in this mock. Say out loud, or type, exactly what you would do.', 'En este examen no hay opciones. Di en voz alta, o escribe, exactamente qué harías.')}</p>
+        ${openBox(T('What I would do…', 'Lo que haría…'))}<button class="btn blue" onclick="A.stOpenReveal()">${T('Show the model answer', 'Ver la respuesta modelo')}</button></div></div><div id="simfb"></div>`);
+  }
+  A.stOpenReveal = () => {
+    const part = ST.parts[ST.i], c = part.s.c, best = c.find(x => x[0] === 2), unsafe = c.filter(x => x[0] === -1);
+    part.typed = (($('#openin') || {}).value || '').trim();
+    $('#stopts').innerHTML = `<div class="model pop">${part.typed ? `<p class="mine">${T('You', 'Tú')}: ${esc(part.typed)}</p>` : ''}
+        <p class="ans ok">✓ ${T('Model answer', 'Respuesta modelo')}: ${chips(esc(L2([best[1], best[2]])))}</p><p class="why">💡 ${chips(esc(L2([best[3], best[4]])))}</p>
+        ${unsafe.length ? `<p class="ans bad">⚠ ${T('Unsafe here', 'Inseguro aquí')}: ${unsafe.map(x => esc(L2([x[1], x[2]]))).join(' · ')}</p>` : ''}</div>
+      <p class="fine">${T('Score yourself honestly, as the examiner would:', 'Puntúate con honestidad, como lo haría el examinador:')}</p>
+      <div class="self-score"><button class="btn green" onclick="A.stOpenScore(2)">${T('I said all of it', 'Lo dije todo')}</button><button class="btn orange" onclick="A.stOpenScore(1)">${T('Part of it', 'Una parte')}</button><button class="btn red" onclick="A.stOpenScore(0)">${T('I missed it', 'No lo dije')}</button>${unsafe.length ? `<button class="btn ghost" onclick="A.stOpenScore(-1)">${T('I said the unsafe one', 'Dije lo inseguro')}</button>` : ''}</div>`;
+    if (S().autoRead) say(L2([best[1], best[2]]));
+  };
+  A.stOpenScore = sc => {
+    const part = ST.parts[ST.i], s = part.s; if (part.done) return; part.done = true;
+    addPts(sc, 2); ST.log.push({ p: 'step', sc, s, k: -1, typed: part.typed });
+    if (sc === -1) { const u = s.c.find(x => x[0] === -1); critical(L2([u[1], u[2]])); }
+    if (sc <= 0 && s.k === 'act') ST.worse = (ST.worse || 0) + 1;
+    document.querySelectorAll('.self-score .btn').forEach(b => { b.disabled = true; }); SFX.tap();
+    $('#simfb').innerHTML = `<div class="simfb neutral pop"><p>✓ ${T('Scored. On to the next step.', 'Puntuado. Al siguiente paso.')}</p>${nextBtn()}</div>`;
+  };
   A.stPick = k => {
     const part = ST.parts[ST.i], c = part.s.c[k], sc = c[0], best = part.s.c.findIndex(x => x[0] === 2);
     addPts(sc, 2); ST.log.push({ p: 'step', sc, s: part.s, k });
@@ -191,6 +226,11 @@
     const c = teachById(part.id), need = c.pts.filter(p => p[0]).length;
     part.order = part.order || shuffle(c.pts.map((_, k) => k)); part.sel = part.sel || [];
     readNow = L2(c.ctx);
+    if (openMode()) {
+      frame(`${top(T('Teaching', 'Educación'), 'teach', 1)}<p class="situation">${esc(L2(c.ctx))} ${T('Teach her now: say out loud, or type, every key point.', 'Edúcala ahora: di en voz alta, o escribe, cada punto clave.')}</p>
+        <div id="stopts">${openBox(T('What I would teach…', 'Lo que enseñaría…'))}<button class="btn blue" onclick="A.stOpenTeach()">${T('Show the key points', 'Ver los puntos clave')}</button></div><div id="simfb"></div>`);
+      return;
+    }
     frame(`${top(T('Teaching', 'Educación'), 'teach', 1)}<p class="situation">${esc(L2(c.ctx))} ${T(`Choose the ${need} points you must teach.`, `Elige los ${need} puntos que debes enseñar.`)}</p>
       <div class="pick-grid">${part.order.map(k => `<button class="pick ${part.sel.includes(k) ? 'on' : ''}" data-k="${k}" onclick="A.stPickPt(${k})">${esc(L2([c.pts[k][1], c.pts[k][2]]))}</button>`).join('')}</div>
       <div class="row"><span class="chip" id="pickn">${part.sel.length}/${need}</span><button class="btn green" id="pickgo" ${part.sel.length === need ? '' : 'disabled'} onclick="A.stTeachDone()">${T('Check', 'Comprobar')}</button></div><div id="simfb"></div>`);
@@ -209,6 +249,20 @@
     document.querySelectorAll('.pick').forEach(b => { const k = +b.dataset.k, good = c.pts[k][0]; b.disabled = true; b.classList.add(good ? 'right' : part.sel.includes(k) ? 'bad' : 'off'); });
     got === need ? SFX.ok() : SFX.no();
     $('#simfb').innerHTML = `<div class="simfb ${got === need ? 'good' : got >= need - 1 ? 'meh' : 'bad'} pop"><b>${got}/${need}</b><p>${T('Green = must teach. Red = wrong advice you chose.', 'Verde = debes enseñarlo. Rojo = consejo erróneo que elegiste.')}</p>${nextBtn()}</div>`;
+  };
+  A.stOpenTeach = () => {
+    const part = ST.parts[ST.i], c = teachById(part.id); part.typed = (($('#openin') || {}).value || '').trim();
+    $('#stopts').innerHTML = `${part.typed ? `<p class="mine">${T('You', 'Tú')}: ${esc(part.typed)}</p>` : ''}<p class="fine">${T('Tick each point you actually covered:', 'Marca cada punto que realmente cubriste:')}</p>
+      <div class="redlist">${c.pts.map((p, k) => p[0] ? `<label class="rl"><input type="checkbox" data-k="${k}"><span>${esc(L2([p[1], p[2]]))}</span></label>` : '').join('')}</div>
+      <p class="ans bad">⚠ ${T('Wrong advice to avoid', 'Consejos erróneos a evitar')}: ${c.pts.filter(p => !p[0]).map(p => esc(L2([p[1], p[2]]))).join(' · ')}</p>
+      <div class="row" id="opendone"><button class="btn green" onclick="A.stOpenTeachDone()">${T('Confirm', 'Confirmar')}</button></div>`;
+  };
+  A.stOpenTeachDone = () => {
+    const part = ST.parts[ST.i], c = teachById(part.id), need = c.pts.filter(p => p[0]).length; if (part.done) return; part.done = true;
+    const sel = [...document.querySelectorAll('#stopts input:checked')].map(x => +x.dataset.k);
+    addPts(sel.length, need); ST.log.push({ p: 'teach', got: sel.length, max: need, id: part.id, sel });
+    document.querySelectorAll('#stopts input').forEach(x => { x.disabled = true; }); const d = $('#opendone'); if (d) d.remove(); SFX.tap();
+    $('#simfb').innerHTML = `<div class="simfb neutral pop"><p>✓ ${T('Scored. On to the next step.', 'Puntuado. Al siguiente paso.')}</p>${nextBtn()}</div>`;
   };
   function drawBack(part) {
     const c = teachById(part.id);
@@ -283,6 +337,11 @@
   function drawDq(part) {
     const r = part.r; part.order = part.order || shuffle([0, 1, 2, 3]);
     readNow = L2(r[1]);
+    if (openMode()) {
+      frame(`${top(T('Examiner’s question', 'Pregunta del examinador'), 'doc', 1)}<p class="situation">${esc(L2(r[1]))}</p>
+        <div id="stopts">${openBox(T('My answer…', 'Mi respuesta…'))}<button class="btn blue" onclick="A.stOpenDq()">${T('Show the answer', 'Ver la respuesta')}</button></div><div id="simfb"></div>`);
+      return;
+    }
     frame(`${top(T('Examiner’s question', 'Pregunta del examinador'), 'doc', 1)}<p class="situation">${esc(L2(r[1]))}</p>
       <div class="choices">${part.order.map((k, n) => `<button class="choice" data-k="${k}" onclick="A.stDq(${k})"><kbd>${n + 1}</kbd><span>${esc(es() ? r[3][k] : r[2][k])}</span></button>`).join('')}</div><div id="simfb"></div>`);
   }
@@ -295,13 +354,26 @@
     $('#simfb').innerHTML = `<div class="simfb ${ok ? 'good' : 'bad'} pop"><b>${ok ? '✓' : '✗'}</b><p>${esc(L2([r[4], r[5]]))}</p>${nextBtn(ok ? 'green' : 'red')}</div>`;
   };
 
+  A.stOpenDq = () => {
+    const part = ST.parts[ST.i], r = part.r; part.typed = (($('#openin') || {}).value || '').trim();
+    $('#stopts').innerHTML = `<div class="model pop">${part.typed ? `<p class="mine">${T('You', 'Tú')}: ${esc(part.typed)}</p>` : ''}<p class="ans ok">✓ ${esc(es() ? r[3][r[0]] : r[2][r[0]])}</p><p class="why">💡 ${esc(L2([r[4], r[5]]))}</p></div>
+      <div class="self-score"><button class="btn green" onclick="A.stOpenDqScore(1)">${T('I knew it', 'Lo sabía')}</button><button class="btn red" onclick="A.stOpenDqScore(0)">${T('I did not', 'No lo sabía')}</button></div>`;
+  };
+  A.stOpenDqScore = ok => {
+    const part = ST.parts[ST.i], r = part.r; if (part.done) return; part.done = true;
+    addPts(ok, 1); ST.log.push({ p: 'dq', ok: !!ok, r, k: ok ? r[0] : -1, typed: part.typed });
+    document.querySelectorAll('.self-score .btn').forEach(b => { b.disabled = true; }); SFX.tap();
+    $('#simfb').innerHTML = `<div class="simfb neutral pop"><p>✓ ${T('Scored.', 'Puntuado.')}</p>${nextBtn()}</div>`;
+  };
+
   /* what she got wrong in this station, as text for the end-of-mock review */
   function mistakes() {
     const out = [];
     ST.log.forEach(l => {
       if ((l.p === 'open' || l.p === 'close') && l.miss && l.miss.length) out.push({ q: l.p === 'open' ? T('Red lines on entering', 'Líneas rojas al entrar') : T('Red lines on leaving', 'Líneas rojas al salir'), best: l.miss.join(' · '), why: T('Not said out loud. Examiners score only what they hear.', 'No lo dijiste en voz alta. Solo se puntúa lo que se oye.') });
-      if (l.p === 'step' && l.sc < 2) { const c = l.s.c, b = c.find(x => x[0] === 2); out.push({ q: L2(l.s.s), mine: L2([c[l.k][1], c[l.k][2]]), best: L2([b[1], b[2]]), why: L2([c[l.k][3], c[l.k][4]]) + ' ' + L2([b[3], b[4]]), crit: l.sc === -1 }); }
-      if (l.p === 'dq' && !l.ok) out.push({ q: L2(l.r[1]), mine: es() ? l.r[3][l.k] : l.r[2][l.k], best: es() ? l.r[3][l.r[0]] : l.r[2][l.r[0]], why: L2([l.r[4], l.r[5]]) });
+      if (l.p === 'step' && l.sc < 2) { const c = l.s.c, b = c.find(x => x[0] === 2), own = l.k >= 0;
+        out.push({ q: L2(l.s.s), mine: own ? L2([c[l.k][1], c[l.k][2]]) : (l.typed || (l.sc === 1 ? T('(said only part of it)', '(dijo solo una parte)') : T('(missed it)', '(no lo dijo)'))), best: L2([b[1], b[2]]), why: (own ? L2([c[l.k][3], c[l.k][4]]) + ' ' : '') + L2([b[3], b[4]]), crit: l.sc === -1 }); }
+      if (l.p === 'dq' && !l.ok) out.push({ q: L2(l.r[1]), mine: l.k >= 0 ? (es() ? l.r[3][l.k] : l.r[2][l.k]) : (l.typed || T('(did not know)', '(no lo sabía)')), best: es() ? l.r[3][l.r[0]] : l.r[2][l.r[0]], why: L2([l.r[4], l.r[5]]) });
       if (l.p === 'teach' && l.got < l.max) { const c = teachById(l.id);
         out.push({ q: T('Teaching points', 'Puntos de educación'), mine: l.sel.filter(k => !c.pts[k][0]).map(k => L2([c.pts[k][1], c.pts[k][2]])).join(' · '), best: c.pts.filter((p, k) => p[0] && !l.sel.includes(k)).map(p => L2([p[1], p[2]])).join(' · '), why: '' }); }
     });

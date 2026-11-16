@@ -64,7 +64,7 @@
       return { q: [`Dopamine 400 mg in 250 mL. The order is ${dose} mcg/kg/min for a ${kg} kg patient. Pump rate in mL/h?`, `Dopamina 400 mg en 250 mL. La orden es ${dose} mcg/kg/min para un paciente de ${kg} kg. ¿Ritmo en mL/h?`], ans, slips: [r2(dose * kg / 1600), r1(dose * 60 / 1600 * 10)], unit: ['mL/h', 'mL/h'],
         how: [`400 mg ÷ 250 mL = 1600 mcg/mL. ${dose} × ${kg} × 60 ÷ 1600 = ${fmt(ans)} mL/h.`, `400 mg ÷ 250 mL = 1600 mcg/mL. ${dose} × ${kg} × 60 ÷ 1600 = ${fmt(ans)} mL/h.`] }; }
   ];
-  function genQ(r) { const g = one(GEN)(); return Object.assign({ m: 'calc', id: '', gen: true, q: L2(g.q), w: L2(g.how) }, choices(g.ans, g.slips, g.unit, r)); }
+  function genQ(r, hard) { const g = one(hard ? GEN.slice(3) : GEN)(); return Object.assign({ m: 'calc', id: '', gen: true, q: L2(g.q), w: L2(g.how) }, choices(g.ans, g.slips, g.unit, r)); }
   function bankQ(q, r) {
     const ord = seeded(q.o.map((_, k) => k), r);
     return { m: q.m, id: q.id, q: L(q.q), o: ord.map(k => L(q.o[k])), a: ord.indexOf(q.a), w: L(q.w) };
@@ -76,7 +76,17 @@
     const pool = LEV.fresh(poolOf(m)).sort((a, b) => (first.includes(b.id) ? 1 : 0) - (first.includes(a.id) ? 1 : 0) || seenN(a.id) - seenN(b.id));
     return pool.slice(0, k).map(q => bankQ(q, r));
   }
+  /* Mock 7: only hard (level 3) questions, unseen first, plus select-all items scored all-or-nothing, and the harder calculations */
+  function sataQ(x, r) { const ord = seeded(x.o.map((_, k) => k), r);
+    return { m: x.m, id: 'sata:' + x.id, multi: true, q: L2(x.q), o: ord.map(k => L2([x.o[k][0], x.o[k][1]])), ans: ord.map((k, i) => x.o[k][2] ? i : -1).filter(i => i > -1), w: L2(x.w) }; }
+  function hardPaper() {
+    const r = rng(Date.now() % 100000), hardOf = m => LEV.fresh(NX.qs.filter(q => q.m === m && q.d === 3));
+    const sata = LEV.fresh((NX.sata || []).map(x => Object.assign({}, x, { id: 'sata:' + x.id, raw: x }))).slice(0, 6).map(x => sataQ(x.raw, r));
+    return shuffle([...sata, ...hardOf('psych').slice(0, 6), ...hardOf('pharm').slice(0, 6), ...hardOf('law').slice(0, 5)].map(q => q.multi ? q : bankQ(q, r)).concat([...Array(7)].map(() => genQ(r, true))));
+  }
+  const kMin = n => (mockById(n) || {}).hard ? 12 : KMIN;
   function paper(n) {
+    if ((mockById(n) || {}).hard) return hardPaper();
     if (n === 4) return focusPaper();
     const r = rng(Date.now() % 100000);
     return shuffle(TOPICS.flatMap(([m, k]) => topicItems(m, k, r)));
@@ -130,8 +140,8 @@
           <div class="mx-bar"><i data-w="${r.p || 0}"></i></div><b>${r.p === null ? '–' : r.p + '%'}</b></div>`).join('')}</section>
       <h2 class="sec">${img('trophy')} ${T(`Your ${NX.mocks.length} mock tests`, `Tus ${NX.mocks.length} exámenes de prueba`)}</h2>
       <div class="mx-papers">${NX.mocks.map((m, i) => { const b = best(m.id), ids = m.focus ? focusIds : m.st;
-        return `<a class="card mx-paper tilt ${m.focus ? 'focus' : ''} ${m.fresh ? 'fresh' : ''}" href="#/mocktest/${m.id}" style="--d:${i * 80}ms">${m.fresh && !b ? `<span class="mx-newtag">${T('NEW', 'NUEVO')}</span>` : ''}
-          <div class="mx-paper-top"><span class="mx-num">${m.focus ? '★' : m.id}</span><div><h3>${esc(L2(m.t))}</h3><small>${m.focus ? T('Your weakest and untried areas', 'Tus áreas más débiles y sin probar') : m.fresh ? T('New cases · 5 stations · 75 min', 'Casos nuevos · 5 estaciones · 75 min') : T('5 stations · 75 minutes', '5 estaciones · 75 minutos')}</small></div></div>
+        return `<a class="card mx-paper tilt ${m.focus ? 'focus' : ''} ${m.fresh ? 'fresh' : ''} ${m.hard ? 'hard' : ''}" href="#/mocktest/${m.id}" style="--d:${i * 80}ms">${(m.fresh || m.hard) && !b ? `<span class="mx-newtag">${m.hard ? T('HARD', 'DIFÍCIL') : T('NEW', 'NUEVO')}</span>` : ''}
+          <div class="mx-paper-top"><span class="mx-num">${m.focus ? '★' : m.hard ? '🔥' : m.id}</span><div><h3>${esc(L2(m.t))}</h3><small>${m.focus ? T('Your weakest and untried areas', 'Tus áreas más débiles y sin probar') : m.hard ? T('No options · self-scored · 12-min test', 'Sin opciones · autoevaluado · prueba de 12 min') : m.fresh ? T('New cases · 5 stations · 75 min', 'Casos nuevos · 5 estaciones · 75 min') : T('5 stations · 75 minutes', '5 estaciones · 75 minutos')}</small></div></div>
           <div class="mx-icons">${ids.map(id => img(stById(id).img)).join('')}${img('clipboard')}</div>
           ${b ? `<span class="mx-stamp mini ${b >= PASS ? 'pass' : 'fail'}">${b >= PASS ? T('PASS', 'APROBADO') : T('NOT YET', 'AÚN NO')} · ${b}%</span><span class="mx-retake">↻ ${T('Retake: new questions', 'Repetir: preguntas nuevas')}</span>` : `<span class="mx-go">${T('Start', 'Empezar')} →</span>`}</a>`; }).join('')}</div>
       ${Object.keys(S().mockReview || {}).length ? `<h2 class="sec">${img('review')} ${T('Review your mistakes', 'Revisa tus errores')}</h2><div class="mx-rv-list">${NX.mocks.filter(m => (S().mockReview || {})[m.id]).map(m => { const rv = S().mockReview[m.id];
@@ -149,9 +159,10 @@
     const ids = idsFor(mk.id), b = best(mk.id);
     view(`<a class="crumb" href="#/mocks">← ${T('Mock tests', 'Exámenes de prueba')}</a>
       <section class="card center-card mx-intro">${img('trophy', 'head-img float')}<h1>${esc(L2(mk.t))}</h1>
+        ${mk.hard ? `<p class="mx-hardnote">🔥 ${T('The hardest mock. In the patient stations there are no options: you say (or type) what you would do, then see the model answer and score yourself honestly, the way an examiner would. Miss an action and the patient gets worse. The knowledge test has only hard questions, some “select all that apply”, in 12 minutes.', 'El examen más difícil. En las estaciones no hay opciones: dices (o escribes) lo que harías, ves la respuesta modelo y te puntúas con honestidad, como un examinador. Si omites una acción, el paciente empeora. La prueba de conocimientos solo tiene preguntas difíciles, algunas de “marca todas las correctas”, en 12 minutos.')}</p>` : ''}
         ${mk.focus ? `<p>${T('Built from your progress: in each area, the station you have not tried yet or scored lowest on, and more questions from your weaker topics.', 'Hecho con tu progreso: en cada área, la estación que aún no probaste o con menor nota, y más preguntas de tus temas más flojos.')}</p>` : ''}
         <ol class="mx-plan">${ids.map((id, i) => `<li style="--d:${i * 70}ms">${img(stById(id).img)}<div><b>${i + 1} · ${esc(L2(NX.mockSlots[i].t))}</b><small>15 min · ${esc(L2(LEV.stationKind(stById(id).kind)))}</small></div></li>`).join('')}
-          <li style="--d:280ms">${img('clipboard')}<div><b>5 · ${T('Knowledge test', 'Prueba de conocimientos')}</b><small>${T('30 questions · 15 min · mental health, pharmacology, laws, calculations', '30 preguntas · 15 min · salud mental, farmacología, leyes, cálculos')}</small></div></li></ol>
+          <li style="--d:280ms">${img('clipboard')}<div><b>5 · ${T('Knowledge test', 'Prueba de conocimientos')}</b><small>${mk.hard ? T('30 hard questions · 12 min · incl. select-all', '30 preguntas difíciles · 12 min · con selección múltiple') + ' · ' : ''}${T('30 questions · 15 min · mental health, pharmacology, laws, calculations', '30 preguntas · 15 min · salud mental, farmacología, leyes, cálculos')}</small></div></li></ol>
         <ul class="rules">${[T('Read each case first, as you will in your own language on the day.', 'Lee primero cada caso, como harás en tu idioma el día del examen.'), T('Think aloud: hand hygiene, identification, every check.', 'Piensa en voz alta: higiene de manos, identificación, cada comprobación.'), T('Station 5 shows no answers until the end, like the real test.', 'La estación 5 no muestra respuestas hasta el final, como la prueba real.'), T('Pass at 60, all five stations combined.', 'Se aprueba con 60, las cinco estaciones combinadas.')].map(x => `<li>${x}</li>`).join('')}</ul>
         ${b ? `<p class="chip">${T('best so far', 'tu mejor nota')}: ${b}%</p>` : ''}
         <button class="btn green big" onclick="A.mxStart(${mk.id})">${T('Start the mock test', 'Empezar el examen')} 🏁</button></section>`);
@@ -170,24 +181,24 @@
     const st = stById(MX.ids[MX.k]), k = MX.k;
     LEV.runStation(Object.assign({}, st, { mins: 15 }), {
       crumb: crumb(k + 1), next: k < 3 ? T('Next station', 'Siguiente estación') : T('Station 5: knowledge test', 'Estación 5: prueba de conocimientos'),
-      exam: true, onResult: r => { if (MX) MX.res[k] = r; }, onNext: () => { if (!MX) return R.mocks(); MX.k = k + 1; door(); } });
+      exam: true, open: !!mockById(MX.n).hard, onResult: r => { if (MX) MX.res[k] = r; }, onNext: () => { if (!MX) return R.mocks(); MX.k = k + 1; door(); } });
   };
 
   /* ---------- station 5: 30 questions, 15 minutes ---------- */
   function kIntro() {
     view(`${crumb(5)}<section class="card door-card mx-door pop"><div class="mx-door-num">5</div>
-      <div class="door-sign">${img('clipboard')}<div><small>${T('Knowledge test', 'Prueba de conocimientos')} · 15 min</small><h2>${T('30 questions', '30 preguntas')}</h2></div></div>
+      <div class="door-sign">${img('clipboard')}<div><small>${T('Knowledge test', 'Prueba de conocimientos')} · ${kMin(MX.n)} min</small><h2>${mockById(MX.n).hard ? T('30 hard questions', '30 preguntas difíciles') : T('30 questions', '30 preguntas')}</h2></div></div>
       <div class="mx-topics">${TOPICS.map(([m, n]) => `<span>${img(topicImg(m))}${esc(topicLabel(m))}</span>`).join('')}</div>
-      <p class="mx-interp"><span>⏱️</span>${T('About 30 seconds each. Answer every question; you will see the answers at the end.', 'Unos 30 segundos cada una. Responde todas; verás las respuestas al final.')}</p>
+      <p class="mx-interp"><span>⏱️</span>${mockById(MX.n).hard ? T('24 seconds each. Some say “select all that apply”: all the right ones and no wrong one, or it counts as wrong.', '24 segundos cada una. Algunas dicen “marca todas las correctas”: todas las correctas y ninguna incorrecta, o cuenta como fallo.') : T('About 30 seconds each. Answer every question; you will see the answers at the end.', 'Unos 30 segundos cada una. Responde todas; verás las respuestas al final.')}</p>
       <button class="btn green big" onclick="A.mxKStart()">${T('Start the test', 'Empezar la prueba')} ✍️</button></section>`);
   }
-  A.mxKStart = () => { K = { qs: paper(MX.n), i: 0, ans: [], deadline: Date.now() + KMIN * 60000 }; clearInterval(KT); KT = setInterval(tickK, 1000); drawK(); };
+  A.mxKStart = () => { K = { qs: paper(MX.n), i: 0, ans: [], min: kMin(MX.n), deadline: Date.now() + kMin(MX.n) * 60000 }; clearInterval(KT); KT = setInterval(tickK, 1000); drawK(); };
   const RING = 2 * Math.PI * 19;
   function tickK() {
     const el = $('#kclock'); if (!K || !el) { clearInterval(KT); K = null; return; }
     const left = Math.max(0, K.deadline - Date.now());
     el.textContent = `${Math.floor(left / 60000)}:${String(Math.floor(left / 1000) % 60).padStart(2, '0')}`;
-    const ring = $('#kring'); if (ring) { ring.style.strokeDashoffset = RING * (1 - left / (KMIN * 60000)); ring.classList.toggle('low', left < 120000); }
+    const ring = $('#kring'); if (ring) { ring.style.strokeDashoffset = RING * (1 - left / (K.min * 60000)); ring.classList.toggle('low', left < 120000); }
     if (!left) { clearInterval(KT); SFX.no(); finishK(true); }
   }
   function drawK() {
@@ -196,12 +207,17 @@
       <div class="mxk-top"><div class="mx-ring"><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="19"/><circle class="fg" id="kring" cx="22" cy="22" r="19" style="stroke-dasharray:${RING}"/></svg><b id="kclock"></b></div>
         <div class="mxk-dots">${K.qs.map((_, k) => `<i class="${k === K.i ? 'cur' : K.ans[k] !== undefined ? 'done' : k < K.i ? 'skip' : ''}"></i>`).join('')}</div><span class="chip">${K.i + 1}/${n}</span></div>
       <div class="mxk-card pop"><span class="mxk-topic">${img(topicImg(q.m))}${esc(topicLabel(q.m))}${q.gen || !seenN(q.id) ? `<em class="mxk-new">${T('new', 'nueva')}</em>` : ''}</span>
-        <p class="mxk-q">${chips(esc(q.q))}</p>
-        <div class="choices">${q.o.map((o, k) => `<button class="choice ${K.ans[K.i] === k ? 'sel' : ''}" data-k="${k}" onclick="A.mxPick(${k})"><kbd>${k + 1}</kbd><span>${chips(esc(o))}</span></button>`).join('')}</div></div>
+        <p class="mxk-q">${chips(esc(q.q))}</p>${q.multi ? `<p class="mxk-multi">☑️ ${T('Select all that apply', 'Marca todas las correctas')}</p>` : ''}
+        <div class="choices ${q.multi ? 'multi' : ''}">${q.o.map((o, k) => `<button class="choice ${picked(K.i, k) ? 'sel' : ''}" data-k="${k}" onclick="A.mxPick(${k})"><kbd>${k + 1}</kbd><span>${chips(esc(o))}</span></button>`).join('')}</div></div>
       <div class="row mxk-foot">${K.i ? `<button class="btn ghost" onclick="A.mxPrevQ()">← ${T('Back', 'Atrás')}</button>` : ''}<button class="btn green" onclick="A.mxNextQ()">${K.i + 1 < n ? T('Next', 'Siguiente') : T('Finish', 'Terminar')} →</button></div></section>`);
     tickK();
   }
-  A.mxPick = k => { if (!K) return; K.ans[K.i] = k; SFX.tap(); document.querySelectorAll('#mxk .choice').forEach(b => b.classList.toggle('sel', +b.dataset.k === k)); };
+  const picked = (i, k) => Array.isArray(K.ans[i]) ? K.ans[i].includes(k) : K.ans[i] === k;
+  const isRight = (q, a) => q.multi ? Array.isArray(a) && a.length === q.ans.length && q.ans.every(k => a.includes(k)) : a === q.a;
+  A.mxPick = k => { if (!K) return; const q = K.qs[K.i];
+    if (q.multi) { const a = Array.isArray(K.ans[K.i]) ? K.ans[K.i] : []; K.ans[K.i] = a.includes(k) ? a.filter(x => x !== k) : a.concat(k); if (!K.ans[K.i].length) K.ans[K.i] = undefined; }
+    else K.ans[K.i] = k;
+    SFX.tap(); document.querySelectorAll('#mxk .choice').forEach(b => b.classList.toggle('sel', picked(K.i, +b.dataset.k))); };
   A.mxPrevQ = () => { if (!K || !K.i) return; K.i--; drawK(); };
   A.mxNextQ = () => {
     if (!K) return;
@@ -213,12 +229,12 @@
   function finishK(timeUp) {
     const by = {}, wrong = [];
     K.qs.forEach((q, k) => {
-      const ok = K.ans[k] === q.a, b = by[q.m] || (by[q.m] = [0, 0]); b[1]++; if (ok) b[0]++;
+      const ok = isRight(q, K.ans[k]), b = by[q.m] || (by[q.m] = [0, 0]); b[1]++; if (ok) b[0]++;
       if (q.id) LEV.markSeen(q.id);
-      if (q.m !== 'calc') { stat(q.m, ok); const w = S().wrong, i = w.indexOf(q.id); if (ok && i > -1) w.splice(i, 1); if (!ok && i < 0) w.push(q.id); }
+      if (q.m !== 'calc' && !q.multi) { stat(q.m, ok); const w = S().wrong, i = w.indexOf(q.id); if (ok && i > -1) w.splice(i, 1); if (!ok && i < 0) w.push(q.id); }
       if (!ok) wrong.push({ q, pick: K.ans[k] });
     });
-    const okN = K.qs.filter((q, k) => K.ans[k] === q.a).length;
+    const okN = K.qs.filter((q, k) => isRight(q, K.ans[k])).length;
     MX.k5 = { pct: Math.round(100 * okN / K.qs.length), ok: okN, n: K.qs.length, by, wrong, timeUp };
     K = null; results();
   }
@@ -240,7 +256,7 @@
   function buildReview(total, sc) {
     return { d: new Date().toISOString().slice(0, 10), total, sc,
       st: MX.ids.map((id, i) => { const r = MX.res[i] || { pct: 0, crit: [], miss: [] }; return { id, t: L2(stById(id).t), slot: L2(NX.mockSlots[i].t), pct: r.pct, crit: r.crit || [], miss: r.miss || [] }; }),
-      k5: { ok: MX.k5.ok, n: MX.k5.n, miss: MX.k5.wrong.map(({ q, pick }) => ({ m: q.m, topic: topicLabel(q.m), q: q.q, mine: pick !== undefined ? q.o[pick] : T('no answer', 'sin respuesta'), best: q.o[q.a], why: q.w })) } };
+      k5: { ok: MX.k5.ok, n: MX.k5.n, miss: MX.k5.wrong.map(({ q, pick }) => ({ m: q.m, topic: topicLabel(q.m), q: q.q, mine: pick === undefined ? T('no answer', 'sin respuesta') : Array.isArray(pick) ? pick.map(k => q.o[k]).join(' · ') : q.o[pick], best: q.multi ? q.ans.map(k => q.o[k]).join(' · ') : q.o[q.a], why: q.w })) } };
   }
   const missCount = rv => rv.st.reduce((a, x) => a + x.miss.length, 0) + rv.k5.miss.length;
   function reviewHtml(rv) {
@@ -325,7 +341,7 @@
 
   /* ---------- Unit 9 on the Learn path ---------- */
   LEV.unitExtra.exam = () => `<div class="mx-unit">
-      ${NX.mocks.map((m, i) => { const b = best(m.id); return `<a class="mx-mini tilt ${m.focus ? 'focus' : ''} ${m.fresh ? 'fresh' : ''}" href="#/mocktest/${m.id}" style="--d:${i * 70}ms">${m.fresh && !b ? `<span class="mx-newtag">${T('NEW', 'NUEVO')}</span>` : ''}<span class="mx-num">${m.focus ? '★' : m.id}</span><small>${esc(L2(m.t))}</small>${b ? `<em class="${b >= PASS ? 'pass' : 'fail'}">${b}% · ↻</em>` : `<em>${T('start', 'empezar')}</em>`}</a>`; }).join('')}
+      ${NX.mocks.map((m, i) => { const b = best(m.id); return `<a class="mx-mini tilt ${m.focus ? 'focus' : ''} ${m.fresh ? 'fresh' : ''} ${m.hard ? 'hard' : ''}" href="#/mocktest/${m.id}" style="--d:${i * 70}ms">${(m.fresh || m.hard) && !b ? `<span class="mx-newtag">${m.hard ? T('HARD', 'DIFÍCIL') : T('NEW', 'NUEVO')}</span>` : ''}<span class="mx-num">${m.focus ? '★' : m.hard ? '🔥' : m.id}</span><small>${esc(L2(m.t))}</small>${b ? `<em class="${b >= PASS ? 'pass' : 'fail'}">${b}% · ↻</em>` : `<em>${T('start', 'empezar')}</em>`}</a>`; }).join('')}
       <a class="mx-mini cheat tilt" href="#/cheats" style="--d:${NX.mocks.length * 70}ms">${img('bulb')}<small>${T('Cheat sheets', 'Chuletas')}</small><em>${T('read', 'leer')}</em></a>
     </div><a class="mx-unit-all" href="#/mocks">${T('All mock tests and where you stand', 'Todos los exámenes y dónde estás')} →</a>`;
 });

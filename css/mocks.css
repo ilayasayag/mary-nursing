@@ -226,3 +226,17 @@
 .mx-rv-link em { margin-left: auto; font-style: normal; font-weight: 800; color: var(--red-d); }
 .simfb.neutral { background: var(--blue-l); border-color: var(--blue); }
 .exam-done .verdict { font-weight: 800; }
+/* Mock 7: Hard */
+.mx-paper.hard { border-left-color: var(--red); background: linear-gradient(135deg, rgba(255, 75, 75, .12), transparent 60%), repeating-linear-gradient(var(--surface) 0 27px, var(--line) 27px 28px); }
+.mx-paper.hard .mx-num, .mx-mini.hard .mx-num { background: var(--red); box-shadow: 0 3px 0 var(--red-d); }
+.mx-hardnote { text-align: left; background: var(--red-l); border-radius: 12px; padding: 10px 12px; font-weight: 700; }
+.open-gate { display: grid; gap: 10px; }
+.open-in { width: 100%; box-sizing: border-box; border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; font: 600 1rem var(--body); background: var(--surface); color: var(--ink); resize: vertical; }
+.open-in:focus { outline: none; border-color: var(--blue); }
+.model { background: var(--soft); border-radius: 12px; padding: 10px 12px; margin-top: 6px; }
+.model .ans { font-weight: 800; margin: 4px 0; } .model .ans.ok { color: var(--green-d); } .model .ans.bad, #stopts .ans.bad { color: var(--red-d); font-weight: 700; }
+.model .why { margin: 4px 0; } .mine { font-style: italic; color: var(--muted); margin: 4px 0; }
+.self-score { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.self-score .btn { flex: 1 1 140px; }
+.warnbox.worse { border-color: var(--red); animation: mxPulse 1.6s ease-in-out 2; }
+.mxk-multi { font-weight: 800; color: var(--blue-d); margin: -4px 0 8px; }
