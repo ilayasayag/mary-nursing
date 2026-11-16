@@ -42,12 +42,44 @@
   /* ---------- station runner ---------- */
   let ST = null, EXD = null, HOOK = null, tick = 0; /* HOOK: a mock test running this station (crumb, next label, callbacks) */
   onLeave(() => { clearInterval(tick); micStop(); });
+  const stepsOf = st => st.steps || (st.kind === 'acute' ? NX.sims.find(s => s.id === st.sim).steps : []);
+  /* where a logged mistake lives, so a drill can ask exactly that step again: {st, k:'step'|'back'|'dq', i} */
+  function refOf(l) {
+    const st = ST.st;
+    if (l.p === 'dq') return { st: st.id, k: 'dq', i: (st.dq || []).indexOf(l.r) };
+    if (l.s && l.s.k === 'teach' && st.teach && l.s.c === (teachById(st.teach) || {}).back) return { st: st.id, k: 'back', i: 0 };
+    return { st: st.id, k: 'step', i: stepsOf(st).indexOf(l.s) };
+  }
+  /* the step or examiner question a ref points at, as a plain multiple-choice item */
+  function itemOf(ref) {
+    const st = NX.stations.find(x => x.id === ref.st); if (!st) return null;
+    if (ref.k === 'dq') { const r = (st.dq || [])[ref.i]; return r ? { dq: r, st } : null; }
+    const s = ref.k === 'back' ? { s: ['You finished teaching. How do you check that the patient understood?', 'Terminaste la educación. ¿Cómo compruebas que el paciente lo entendió?'], c: (teachById(st.teach) || {}).back } : stepsOf(st)[ref.i];
+    return s && s.c ? { step: s, st } : null;
+  }
+  /* old reviews were saved without refs: find the step by its text in either language */
+  function itemByText(stId, text) {
+    const st = NX.stations.find(x => x.id === stId); if (!st || !text) return null;
+    const i = stepsOf(st).findIndex(s => s.s && s.c && (s.s[0] === text || s.s[1] === text));
+    if (i > -1) return itemOf({ st: stId, k: 'step', i });
+    const d = (st.dq || []).findIndex(r => r[1].includes(text));
+    return d > -1 ? itemOf({ st: stId, k: 'dq', i: d }) : null;
+  }
+  /* one failed step or examiner question as a quiz card: same options, the best one is the answer */
+  function mistakeCard(it) {
+    if (!it) return null;
+    const title = `<span class="mx-dtag">${esc(L2(it.st.t))}</span>`;
+    if (it.dq) { const r = it.dq, ord = shuffle([0, 1, 2, 3]);
+      return { type: 'mcq', title, q: `<p class="qtext">${esc(L2(r[1]))}</p>`, o: ord.map(k => esc(es() ? r[3][k] : r[2][k])), a: ord.indexOf(r[0]), w: esc(L2([r[4], r[5]])) }; }
+    const c = it.step.c, ord = shuffle(c.map((x, k) => k)), b = c.find(x => x[0] === 2);
+    return { type: 'mcq', title, q: `<p class="qtext">${esc(L2(it.step.s))}</p>`, o: ord.map(k => esc(L2([c[k][1], c[k][2]]))), a: ord.findIndex(k => c[k][0] === 2), w: esc(L2([b[3], b[4]])) };
+  }
   function buildParts(st) {
     const dq = (st.dq || []).map(r => ({ p: 'dq', r }));
     if (st.kind === 'proc') return [{ p: 'order', id: st.proc }];
     if (st.kind === 'sbar') return [{ p: 'sbar', id: st.sbar }, ...dq];
     if (st.kind === 'drill') return [{ p: 'open' }, { p: 'close' }];
-    const steps = st.steps || (st.kind === 'acute' ? NX.sims.find(s => s.id === st.sim).steps : []);
+    const steps = stepsOf(st);
     const talk = [{ p: 'teach', id: st.teach }, { p: 'back', id: st.teach }];
     const mid = st.kind === 'teach' ? talk : steps.map(x => x.calc ? { p: 'calc', id: x.calc } : { p: 'step', s: x }).concat(st.kind === 'actor' ? talk : []);
     return [{ p: 'open' }, ...mid, { p: 'close' }, ...dq];
@@ -242,8 +274,8 @@
     $('#pickn').textContent = `${part.sel.length}/${need}`; $('#pickgo').disabled = part.sel.length !== need;
   };
   A.stTeachDone = () => {
-    const part = ST.parts[ST.i], c = teachById(part.id), need = c.pts.filter(p => p[0]).length; part.done = true;
-    const got = part.sel.filter(k => c.pts[k][0]).length;
+    const part = ST.parts[ST.i], c = teachById(part.id), need = c.pts.filter(p => p[0]).length; if (part.done) return; part.done = true;
+    const got = part.sel.filter(k => c.pts[k][0]).length; const go = $('#pickgo'); if (go) go.parentElement.remove(); /* one check only: a second press scored the points twice */
     addPts(got, need); ST.log.push({ p: 'teach', got, max: need, id: part.id, sel: part.sel.slice() });
     if (exam()) { document.querySelectorAll('.pick').forEach(b => { b.disabled = true; }); SFX.tap(); $('#simfb').innerHTML = saved(); return; }
     document.querySelectorAll('.pick').forEach(b => { const k = +b.dataset.k, good = c.pts[k][0]; b.disabled = true; b.classList.add(good ? 'right' : part.sel.includes(k) ? 'bad' : 'off'); });
@@ -290,7 +322,7 @@
   };
   const lis = a => { const t = []; a.forEach(x => { let lo = 0, hi = t.length; while (lo < hi) { const m = (lo + hi) >> 1; if (t[m] < x) lo = m + 1; else hi = m; } t[lo] = x; }); return t.length; };
   A.stOrdDone = () => {
-    const part = ST.parts[ST.i], p = procById(part.id); part.done = true;
+    const part = ST.parts[ST.i], p = procById(part.id); if (part.done) return; part.done = true;
     const got = lis(part.seq), n = p.steps.length, crit = p.crit || [];
     addPts(got, n); ST.log.push({ p: 'order', got, max: n });
     const critWrong = crit.filter(k => part.seq.indexOf(k) !== k);
@@ -321,7 +353,7 @@
     $('#sbgo').disabled = Object.keys(part.pick).length !== c.items.length;
   };
   A.stSbDone = () => {
-    const part = ST.parts[ST.i], c = sbarById(part.id); part.done = true;
+    const part = ST.parts[ST.i], c = sbarById(part.id); if (part.done) return; part.done = true;
     let got = 0; c.items.forEach((it, k) => { if (part.pick[k] === it[0]) got++; });
     addPts(got, c.items.length); ST.log.push({ p: 'sbar', got, max: c.items.length });
     document.querySelectorAll('.sbar-item').forEach(el => { const k = +el.dataset.k, ok = part.pick[k] === c.items[k][0]; el.classList.add(ok ? 'right' : 'bad');
@@ -372,8 +404,8 @@
     ST.log.forEach(l => {
       if ((l.p === 'open' || l.p === 'close') && l.miss && l.miss.length) out.push({ q: l.p === 'open' ? T('Red lines on entering', 'Líneas rojas al entrar') : T('Red lines on leaving', 'Líneas rojas al salir'), best: l.miss.join(' · '), why: T('Not said out loud. Examiners score only what they hear.', 'No lo dijiste en voz alta. Solo se puntúa lo que se oye.') });
       if (l.p === 'step' && l.sc < 2) { const c = l.s.c, b = c.find(x => x[0] === 2), own = l.k >= 0;
-        out.push({ q: L2(l.s.s), mine: own ? L2([c[l.k][1], c[l.k][2]]) : (l.typed || (l.sc === 1 ? T('(said only part of it)', '(dijo solo una parte)') : T('(missed it)', '(no lo dijo)'))), best: L2([b[1], b[2]]), why: (own ? L2([c[l.k][3], c[l.k][4]]) + ' ' : '') + L2([b[3], b[4]]), crit: l.sc === -1 }); }
-      if (l.p === 'dq' && !l.ok) out.push({ q: L2(l.r[1]), mine: l.k >= 0 ? (es() ? l.r[3][l.k] : l.r[2][l.k]) : (l.typed || T('(did not know)', '(no lo sabía)')), best: es() ? l.r[3][l.r[0]] : l.r[2][l.r[0]], why: L2([l.r[4], l.r[5]]) });
+        out.push({ q: L2(l.s.s), mine: own ? L2([c[l.k][1], c[l.k][2]]) : (l.typed || (l.sc === 1 ? T('(said only part of it)', '(dijo solo una parte)') : T('(missed it)', '(no lo dijo)'))), best: L2([b[1], b[2]]), why: (own ? L2([c[l.k][3], c[l.k][4]]) + ' ' : '') + L2([b[3], b[4]]), crit: l.sc === -1, ref: refOf(l) }); }
+      if (l.p === 'dq' && !l.ok) out.push({ q: L2(l.r[1]), mine: l.k >= 0 ? (es() ? l.r[3][l.k] : l.r[2][l.k]) : (l.typed || T('(did not know)', '(no lo sabía)')), best: es() ? l.r[3][l.r[0]] : l.r[2][l.r[0]], why: L2([l.r[4], l.r[5]]), ref: refOf(l) });
       if (l.p === 'teach' && l.got < l.max) { const c = teachById(l.id);
         out.push({ q: T('Teaching points', 'Puntos de educación'), mine: l.sel.filter(k => !c.pts[k][0]).map(k => L2([c.pts[k][1], c.pts[k][2]])).join(' · '), best: c.pts.filter((p, k) => p[0] && !l.sel.includes(k)).map(p => L2([p[1], p[2]])).join(' · '), why: '' }); }
     });
@@ -420,6 +452,8 @@
   /* mock tests (js/mocks.js) run stations through this, with their own crumb and next step */
   LEV.runStation = (st, hook) => { EXD = null; HOOK = hook || null; runStation(st); };
   LEV.stationKind = k => KIND[k];
+  /* a review item (new: ref; older reviews: matched by text) as a quiz card, or null if it cannot be asked again */
+  LEV.mistakeCard = (x, stId) => mistakeCard(x.ref ? itemOf(x.ref) : itemByText(stId, x.q));
 
   /* ---------- exam day: 6 stations back to back ---------- */
   const byKind = k => NX.stations.filter(s => s.kind === k);

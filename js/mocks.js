@@ -127,6 +127,8 @@
   const bars = () => document.querySelectorAll('[data-w]').forEach((el, i) => setTimeout(() => { el.style.width = el.dataset.w + '%'; }, 120 + i * 70));
 
   /* ---------- hub ---------- */
+  const hubDrill = () => { const n = allCards().length;
+    return n ? `<button class="btn green wide mx-drillall" onclick="A.go('#/mockdrill/all')">🎯 ${T(`Practise all my mistakes (${n})`, `Practicar todos mis errores (${n})`)}<small>${T('from every mock and every quiz: only what you got wrong', 'de todos los exámenes y tests: solo lo que fallaste')}</small></button>` : ''; };
   R.mocks = () => {
     const rd = readiness(), dl = daysLeft();
     const focusIds = idsFor(4);
@@ -144,7 +146,8 @@
           <div class="mx-paper-top"><span class="mx-num">${m.focus ? '★' : m.hard ? '🔥' : m.id}</span><div><h3>${esc(L2(m.t))}</h3><small>${m.focus ? T('Your weakest and untried areas', 'Tus áreas más débiles y sin probar') : m.hard ? T('No options · self-scored · 12-min test', 'Sin opciones · autoevaluado · prueba de 12 min') : m.fresh ? T('New cases · 5 stations · 75 min', 'Casos nuevos · 5 estaciones · 75 min') : T('5 stations · 75 minutes', '5 estaciones · 75 minutos')}</small></div></div>
           <div class="mx-icons">${ids.map(id => img(stById(id).img)).join('')}${img('clipboard')}</div>
           ${b ? `<span class="mx-stamp mini ${b >= PASS ? 'pass' : 'fail'}">${b >= PASS ? T('PASS', 'APROBADO') : T('NOT YET', 'AÚN NO')} · ${b}%</span><span class="mx-retake">↻ ${T('Retake: new questions', 'Repetir: preguntas nuevas')}</span>` : `<span class="mx-go">${T('Start', 'Empezar')} →</span>`}</a>`; }).join('')}</div>
-      ${Object.keys(S().mockReview || {}).length ? `<h2 class="sec">${img('review')} ${T('Review your mistakes', 'Revisa tus errores')}</h2><div class="mx-rv-list">${NX.mocks.filter(m => (S().mockReview || {})[m.id]).map(m => { const rv = S().mockReview[m.id];
+      ${NX.mocks.some(m => (S().mockReview || {})[m.id] || best(m.id)) ? `<h2 class="sec">${img('review')} ${T('Review your mistakes', 'Revisa tus errores')}</h2>${hubDrill()}<div class="mx-rv-list">${NX.mocks.filter(m => (S().mockReview || {})[m.id] || best(m.id)).map(m => { const rv = (S().mockReview || {})[m.id];
+        if (!rv) return `<a class="card mx-rv-link old tilt" href="#/mockreview/${m.id}"><span class="mx-num">${m.focus ? '★' : m.id}</span><div><b>${esc(L2(m.t))}</b><small>${best(m.id)}/100 · ${T('taken before mistakes were saved', 'hecho antes de guardar los errores')}</small></div><em>${T('why?', '¿por qué?')} →</em></a>`;
         return `<a class="card mx-rv-link tilt" href="#/mockreview/${m.id}"><span class="mx-num">${m.focus ? '★' : m.id}</span><div><b>${esc(L2(m.t))}</b><small>${rv.d.split('-').reverse().slice(0, 2).join('.')} · ${rv.total}/100</small></div><em>${missCount(rv)} ${T('to review', 'por revisar')} →</em></a>`; }).join('')}</div>` : ''}
       <a class="card mx-cheat-cta tilt" href="#/cheats">${img('bulb', 'wiggle')}<div><b>${T('Cheat sheets', 'Chuletas')}</b><span>${T('The numbers and rules to read right before the exam', 'Las cifras y reglas para leer justo antes del examen')}</span></div><span class="go">→</span></a>`);
     bars();
@@ -241,13 +244,16 @@
 
   /* ---------- results and feedback ---------- */
   /* the weakest of each kind, so this mock, station 5 and her whole progress all get a say */
+  const rvNow = () => (S().mockReview || {})[MX.n] || { st: [], k5: { miss: [] } };
+  const drillN = id => { const x = rvNow().st.find(y => y.id === id); return x ? drillable(x) : 0; };
+  const wrongIn = m => S().wrong.filter(id => (NX.qs.find(q => q.id === id) || {}).m === m).length;
   function focusList() {
     const st = MX.res.filter(r => r && (r.crit.length || r.pct < 70 || r.timeUp)).sort((a, b) => a.pct - b.pct).slice(0, 3)
-      .map(r => { const s = stById(r.id); return { ic: s.img, txt: `${T('Redo', 'Repite')} “${L2(s.t)}”: ${r.pct}%${r.crit.length ? ` · ⚠ ${T('a critical error', 'un error crítico')}` : ''}${r.timeUp ? ` · ⏰ ${T('time ran out', 'se acabó el tiempo')}` : ''}`, href: `#/station/${s.id}` }; });
+      .map(r => { const s = stById(r.id); return { ic: s.img, txt: `${T('Redo', 'Repite')} “${L2(s.t)}”: ${r.pct}%${r.crit.length ? ` · ⚠ ${T('a critical error', 'un error crítico')}` : ''}${r.timeUp ? ` · ⏰ ${T('time ran out', 'se acabó el tiempo')}` : ''}`, href: drillN(r.id) ? `#/mockdrill/${MX.n}/${s.id}` : `#/station/${s.id}`, more: drillN(r.id) ? T(`only the ${drillN(r.id)} steps you missed`, `solo los ${drillN(r.id)} pasos que fallaste`) : '' }; });
     const k5 = Object.entries(MX.k5.by).filter(([, [ok, n]]) => n && ok / n < 0.7).sort((a, b) => a[1][0] / a[1][1] - b[1][0] / b[1][1]).slice(0, 2)
-      .map(([m, [ok, n]]) => ({ ic: topicImg(m), txt: `${T('Station 5', 'Estación 5')} · ${topicLabel(m)}: ${ok}/${n}`, href: m === 'calc' ? '#/calc' : `#/quiz/${m}` }));
+      .map(([m, [ok, n]]) => ({ ic: topicImg(m), txt: `${T('Station 5', 'Estación 5')} · ${topicLabel(m)}: ${ok}/${n}`, href: drillCards([rvNow()], 'k5:' + m).length ? `#/mockdrill/${MX.n}/k5:${m}` : m === 'calc' ? '#/calc' : `#/quiz/${m}`, more: drillCards([rvNow()], 'k5:' + m).length ? T('only the questions you missed', 'solo las preguntas que fallaste') : '' }));
     const weak = ['mat', 'pharm', 'law', 'psych', 'peds', 'medsurg', 'emerg'].map(m => [m, pctOf(m)]).filter(([, p]) => p !== null && p < 85).sort((a, b) => a[1] - b[1]).slice(0, 1)
-      .map(([m, p]) => ({ ic: m, txt: T(`Across all your practice, ${L(modById(m).title)} is at ${p}%: one more unit quiz`, `En toda tu práctica, ${L(modById(m).title)} está en ${p}%: un test más de la unidad`), href: `#/quiz/${m}` }));
+      .map(([m, p]) => ({ ic: m, txt: wrongIn(m) ? T(`Across all your practice, ${L(modById(m).title)} is at ${p}%`, `En toda tu práctica, ${L(modById(m).title)} está en ${p}%`) : T(`Across all your practice, ${L(modById(m).title)} is at ${p}%: one more unit quiz`, `En toda tu práctica, ${L(modById(m).title)} está en ${p}%: un test más de la unidad`), href: wrongIn(m) ? `#/review/${m}` : `#/quiz/${m}`, more: wrongIn(m) ? T(`only the ${wrongIn(m)} questions you got wrong`, `solo las ${wrongIn(m)} preguntas que fallaste`) : '' }));
     const procs = NX.stations.filter(s => s.kind === 'proc' && rec(s.id) && !rec(s.id).pass);
     const skills = procs.length ? [{ ic: 'syringe', txt: T(`Skills you will use inside the cases, not passed yet: ${procs.map(s => L2(s.t)).join(', ')}`, `Técnicas que usarás dentro de los casos, aún sin superar: ${procs.map(s => L2(s.t)).join(', ')}`), href: '#/stations/proc' }] : [];
     return [...st, ...k5, ...weak, ...skills];
@@ -256,25 +262,56 @@
   function buildReview(total, sc) {
     return { d: new Date().toISOString().slice(0, 10), total, sc,
       st: MX.ids.map((id, i) => { const r = MX.res[i] || { pct: 0, crit: [], miss: [] }; return { id, t: L2(stById(id).t), slot: L2(NX.mockSlots[i].t), pct: r.pct, crit: r.crit || [], miss: r.miss || [] }; }),
-      k5: { ok: MX.k5.ok, n: MX.k5.n, miss: MX.k5.wrong.map(({ q, pick }) => ({ m: q.m, topic: topicLabel(q.m), q: q.q, mine: pick === undefined ? T('no answer', 'sin respuesta') : Array.isArray(pick) ? pick.map(k => q.o[k]).join(' · ') : q.o[pick], best: q.multi ? q.ans.map(k => q.o[k]).join(' · ') : q.o[q.a], why: q.w })) } };
+      k5: { ok: MX.k5.ok, n: MX.k5.n, miss: MX.k5.wrong.map(({ q, pick }) => ({ m: q.m, id: q.id || '', o: q.multi ? undefined : q.o, a: q.multi ? undefined : q.a, topic: topicLabel(q.m), q: q.q, mine: pick === undefined ? T('no answer', 'sin respuesta') : Array.isArray(pick) ? pick.map(k => q.o[k]).join(' · ') : q.o[pick], best: q.multi ? q.ans.map(k => q.o[k]).join(' · ') : q.o[q.a], why: q.w })) } };
   }
+  /* ---------- mistakes-only drill: just the steps and questions she got wrong, nothing else ---------- */
+  const qCard = x => { if (!x.id && !x.o) { /* older reviews kept only the text */ const q = NX.qs.find(b => L(b.q) === x.q); return q ? LEV.staticMCQ(q) : null; }
+    const bank = x.id && NX.qs.find(b => b.id === x.id); if (bank) return LEV.staticMCQ(bank);
+    if (!x.o || x.a === undefined) return null; const ord = shuffle(x.o.map((_, k) => k));
+    return { type: 'mcq', m: x.m, title: '', q: `<p class="qtext">${chips(esc(x.q))}</p>`, o: ord.map(k => chips(esc(x.o[k]))), a: ord.indexOf(x.a), w: chips(esc(x.why || '')) }; };
+  const stCards = x => x.miss.map(m => LEV.mistakeCard(m, x.id)).filter(Boolean);
+  const drillable = x => stCards(x).length;
+  /* rvs: reviews to draw from; only: a station id, 'k5', or nothing for everything */
+  function drillCards(rvs, only) {
+    const seen = new Set(), out = [];
+    const add = c => { if (!c) return; const key = c.id || c.q; if (seen.has(key)) return; seen.add(key); out.push(c); };
+    rvs.forEach(rv => {
+      const k5 = only && only.startsWith('k5'), topic = k5 && only.split(':')[1];
+      if (!k5) rv.st.filter(x => !only || x.id === only).forEach(x => stCards(x).forEach(add));
+      if (!only || k5) rv.k5.miss.filter(x => !topic || x.m === topic).forEach(x => add(qCard(x)));
+    });
+    return out;
+  }
+  const allReviews = () => Object.values(S().mockReview || {});
+  /* every saved mock mistake plus every question still in Fix mistakes (older mocks put theirs there) */
+  const allCards = () => { const cards = drillCards(allReviews());
+    S().wrong.map(id => NX.qs.find(q => q.id === id)).filter(Boolean).forEach(q => { if (!cards.some(c => c.id === q.id)) cards.push(LEV.staticMCQ(q)); });
+    return cards; };
+  /* #/mockdrill/all · #/mockdrill/<mock> · #/mockdrill/<mock>/<station id | k5> */
+  R.mockdrill = (n, only) => {
+    const all = n === 'all', cards = all ? allCards() : drillCards([(S().mockReview || {})[n]].filter(Boolean), only);
+    const back = all ? '#/mocks' : `#/mockreview/${n}`;
+    if (!cards.length) return view(`<a class="crumb" href="${back}">← ${T('Back', 'Volver')}</a><section class="card center-card">${mascot('happy', 'big')}<h2>${T('Nothing left to fix here', 'No queda nada por corregir aquí')}</h2></section>`);
+    LEV.drill(shuffle(cards), { back, doneTitle: T('Mistakes practised', 'Errores practicados') });
+  };
   const missCount = rv => rv.st.reduce((a, x) => a + x.miss.length, 0) + rv.k5.miss.length;
-  function reviewHtml(rv) {
+  function reviewHtml(rv, n) {
     const item = (x, topic) => `<div class="mx-rq ${x.crit ? 'crit' : ''}">${topic ? `<span class="mxk-topic">${img(topicImg(x.m))}${esc(x.topic)}</span>` : ''}<p class="q">${chips(esc(x.q))}</p>
       ${x.mine ? `<p class="ans bad">✗ ${T('You', 'Tú')}: ${chips(esc(x.mine))}</p>` : ''}${x.best ? `<p class="ans ok">✓ ${T('Best', 'Mejor')}: ${chips(esc(x.best))}</p>` : ''}${x.why ? `<p class="why">💡 ${chips(esc(x.why))}</p>` : ''}</div>`;
     const stations = rv.st.filter(x => x.miss.length).map(x => `<div class="mx-rv-st"><h4>${esc(x.slot)} · ${esc(x.t)} <em>${x.pct}%</em></h4>${x.miss.map(m => item(m)).join('')}
-      <a class="btn ghost small" href="#/station/${x.id}">${T('Practise this station', 'Practicar esta estación')}</a></div>`).join('');
+      ${drillable(x) ? `<a class="btn ghost small" href="#/mockdrill/${n}/${x.id}">${T('Practise only these', 'Practicar solo estos')} (${drillable(x)})</a>` : ''}</div>`).join('');
     return `<section class="card mx-review" id="mx-mistakes"><h2>${img('review')} ${T('Your mistakes', 'Tus errores')} (${missCount(rv)})</h2>
       ${missCount(rv) ? `<p class="fine">${T('Each one shows your answer, the best answer and why. Read the 💡 lines: that is what to do next time.', 'Cada uno muestra tu respuesta, la mejor y por qué. Lee las líneas 💡: es lo que harás la próxima vez.')}</p>` : `<p class="mx-allgood">🌟 ${T('No mistakes in this attempt.', 'Ningún error en este intento.')}</p>`}
       ${stations ? `<h3 class="mx-rv-h">${T('Patient stations', 'Estaciones de pacientes')}</h3>${stations}` : ''}
       ${rv.k5.miss.length ? `<h3 class="mx-rv-h">${T('Knowledge test', 'Prueba de conocimientos')} · ${rv.k5.ok}/${rv.k5.n}</h3>${rv.k5.miss.map(m => item(m, true)).join('')}
-        <a class="btn blue small" href="#/review">${T('Practise the missed questions again', 'Practicar otra vez las preguntas falladas')}</a>` : ''}</section>`;
+        <a class="btn blue small" href="#/mockdrill/${n}/k5">${T('Practise only these questions', 'Practicar solo estas preguntas')}</a>` : ''}
+      ${drillCards([rv]).length ? `<button class="btn green wide mx-drillall" onclick="A.go('#/mockdrill/${n}')">🎯 ${T(`Practise only my mistakes (${drillCards([rv]).length})`, `Practicar solo mis errores (${drillCards([rv]).length})`)}</button>` : ''}</section>`;
   }
   R.mockreview = n => {
     const mk = mockById(n), rv = ((S().mockReview || {})[n]); if (!mk) return R.mocks();
     view(`<a class="crumb" href="#/mocks">← ${T('Mock tests', 'Exámenes de prueba')}</a>
-      <section class="card mx-rv-head">${img('review', 'head-img float')}<div><h1>${esc(L2(mk.t))}</h1><p>${rv ? `${rv.d.split('-').reverse().slice(0, 2).join('.')} · ${rv.total}/100 · ${missCount(rv)} ${T('mistakes', 'errores')}` : T('No saved review yet.', 'Aún no hay revisión guardada.')}</p></div></section>
-      ${rv ? reviewHtml(rv) : `<section class="card"><p>${T('Reviews are saved from now on, each time you finish this mock. Missed knowledge-test questions from earlier attempts are in Practice → Fix mistakes.', 'Las revisiones se guardan a partir de ahora, cada vez que termines este examen. Las preguntas falladas de intentos anteriores están en Practicar → Corregir errores.')}</p><a class="btn blue" href="#/review">${T('Fix mistakes', 'Corregir errores')}</a></section>`}
+      <section class="card mx-rv-head">${img('review', 'head-img float')}<div><h1>${esc(L2(mk.t))}</h1><p>${rv ? `${rv.d.split('-').reverse().slice(0, 2).join('.')} · ${rv.total}/100 · ${missCount(rv)} ${T('mistakes', 'errores')}` : best(mk.id) ? `${best(mk.id)}/100 · ${T('score only', 'solo la nota')}` : T('Not taken yet.', 'Aún no lo hiciste.')}</p></div></section>
+      ${rv ? reviewHtml(rv, n) : `<section class="card mx-oldrv"><p>${T('You took this mock before the app saved each mistake, so only your score was kept. The knowledge-test questions you missed then are not lost: they are in “Practise all my mistakes”. Take this mock again to get a full review of its stations.', 'Hiciste este examen antes de que la app guardara cada error, así que solo quedó tu nota. Las preguntas que fallaste entonces no se pierden: están en “Practicar todos mis errores”. Repite este examen para tener la revisión completa de sus estaciones.')}</p><a class="btn blue" href="#/mockdrill/all">🎯 ${T('Practise all my mistakes', 'Practicar todos mis errores')}</a></section>`}
       <div class="row mx-end"><button class="btn green" onclick="A.go('#/mocktest/${mk.id}')">${T('Try this mock again', 'Repetir este examen')}</button></div>`);
   };
   function results() {
@@ -302,9 +339,9 @@
         <div class="mx-row ${tone(MX.k5.pct)}"><span class="mx-n">5</span>${img('clipboard')}<div><b>${T('Knowledge test', 'Prueba de conocimientos')} · ${MX.k5.ok}/${MX.k5.n}</b><small>${MX.k5.timeUp ? '⏰ ' + T('time ran out', 'se acabó el tiempo') : ''}</small>
           <div class="mx-topics small">${Object.entries(MX.k5.by).map(([m, [ok, n]]) => `<span class="${tone(Math.round(100 * ok / n))}">${img(topicImg(m))}${esc(topicLabel(m))} ${ok}/${n}</span>`).join('')}</div><div class="mx-bar"><i data-w="${MX.k5.pct}"></i></div></div><em>${MX.k5.pct}%</em></div></section>
       <h2 class="sec">${img('target')} ${T('What to focus on now', 'En qué centrarte ahora')}</h2>
-      <section class="card mx-focus">${focus.length ? `<ol>${focus.map((f, i) => `<li style="--d:${i * 90}ms"><a href="${f.href}">${img(f.ic)}<span>${esc(f.txt)}</span><b>→</b></a></li>`).join('')}</ol>`
+      <section class="card mx-focus">${focus.length ? `<ol>${focus.map((f, i) => `<li style="--d:${i * 90}ms"><a href="${f.href}">${img(f.ic)}<span>${esc(f.txt)}${f.more ? `<small class="mx-only">🎯 ${esc(f.more)}</small>` : ''}</span><b>→</b></a></li>`).join('')}</ol>`
         : `<p class="mx-allgood">🌟 ${T('Nothing below 70% and no critical errors. Keep the red lines out loud and read the cheat sheets the night before.', 'Nada por debajo de 70% y sin errores críticos. Sigue diciendo las líneas rojas en voz alta y lee las chuletas la noche antes.')}</p>`}</section>
-      ${reviewHtml(rv)}
+      ${reviewHtml(rv, MX.n)}
       <div class="row mx-end"><button class="btn green" onclick="A.go('#/mocktest/${MX.n}')">${T('Try this mock again', 'Repetir este examen')}</button><a class="btn ghost" href="#/mocks">${T('All mock tests', 'Todos los exámenes')}</a></div>`);
     document.querySelectorAll('[data-c]').forEach(el => countUp(el, +el.dataset.c));
     requestAnimationFrame(() => { const a = $('#mxarc'); if (a) a.style.strokeDashoffset = ARC * (1 - total / 100); });

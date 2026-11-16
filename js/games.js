@@ -270,5 +270,5 @@
   };
 
   /* restart helper used by "play again" buttons (same hash would not re-route) */
-  A.go = h => { if (location.hash === '#/' + h) A.route(); else location.hash = '#/' + h; };
+  A.go = h => { h = String(h).replace(/^#?\/?/, ''); /* accepts 'mocks' or '#/mocks' */ if (location.hash === '#/' + h) A.route(); else location.hash = '#/' + h; };
 });

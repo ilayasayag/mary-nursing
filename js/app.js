@@ -605,8 +605,8 @@
     R.learn();
     session(cards, { back: '#/', xpBase: 25, doneTitle: t('quizDone'), onEnd: acc => { if (acc >= 60) S.done[nodeKey(id, 'q')] = 1; } });
   };
-  R.review = () => {
-    const cards = S.wrong.map(id => NX.qs.find(q => q.id === id)).filter(Boolean).map(staticMCQ);
+  R.review = m => { /* #/review/<unit> keeps only that unit's mistakes */
+    const cards = S.wrong.map(id => NX.qs.find(q => q.id === id)).filter(q => q && (!m || q.m === m)).map(staticMCQ);
     R.practice();
     if (!cards.length) return toast(t('noWrong'), 'party');
     session(shuffle(cards), { back: '#/practice', hasHearts: false, retry: false });
@@ -1161,7 +1161,7 @@
     stopTimer(); stopVoice(); cancelAnimationFrame(ecgRAF);
     leaveHooks.splice(0).forEach(fn => { try { fn(); } catch (e) { /* ignore */ } });
     const [, page, a, b] = (location.hash || '#/').split('/');
-    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', stations: 'sim', station: 'sim', examday: 'sim', calc: 'sim', redlines: 'sim', mocks: 'sim', mocktest: 'sim', mockreview: 'sim', cheats: 'sim', ulpan: 'ulpan', ulesson: 'ulpan', utest: 'ulpan', uweak: 'ulpan', uplace: 'ulpan', ugame: 'ulpan', utalk: 'ulpan', uexam: 'ulpan', udeck: 'ulpan', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', triage: 'practice', medpass: 'practice', vitals: 'practice', rain: 'practice', memory: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
+    const tab = { '': 'learn', lesson: 'learn', quiz: 'learn', sim: 'sim', stations: 'sim', station: 'sim', examday: 'sim', calc: 'sim', redlines: 'sim', mocks: 'sim', mocktest: 'sim', mockreview: 'sim', mockdrill: 'sim', cheats: 'sim', ulpan: 'ulpan', ulesson: 'ulpan', utest: 'ulpan', uweak: 'ulpan', uplace: 'ulpan', ugame: 'ulpan', utalk: 'ulpan', uexam: 'ulpan', udeck: 'ulpan', practice: 'practice', flash: 'practice', match: 'practice', speed: 'practice', mock: 'practice', review: 'practice', triage: 'practice', medpass: 'practice', vitals: 'practice', rain: 'practice', memory: 'practice', plan: 'plan', exam: 'exam', me: 'me', import: 'me' }[page || ''] || 'learn';
     document.querySelectorAll('[data-nav]').forEach(x => x.classList.toggle('active', x.dataset.nav === tab));
     $('#app').classList.toggle('wide', tab !== 'learn' && tab !== 'me');
     (R[page] || R.learn)(a, b);
@@ -1235,7 +1235,9 @@
   /* games in js/games.js plug in here */
   const unitExtra = {}; /* extensions add a panel under a unit's path (Unit 9: mock tests) */
   const LEV = { R, A: window.A, unitExtra, view, img, esc, shuffle, pick, t, L, L2, meaning, SFX, play, speak, stopVoice, segments, touch, stat, confetti, toast, mascot, countUp,
-    chips, uniqVocab, modById, save, fresh, markSeen, state: () => S, onLeave: fn => leaveHooks.push(fn), UNIT_COLORS };
+    chips, uniqVocab, modById, save, fresh, markSeen, staticMCQ,
+    drill: (cards, opts) => session(cards, Object.assign({ hasHearts: false, retry: true, xpBase: 10 }, opts)), /* mistakes-only practice */
+    state: () => S, onLeave: fn => leaveHooks.push(fn), UNIT_COLORS };
   (window.LEV_EXT || []).forEach(ext => ext(LEV));
   seedSeen();
   route();

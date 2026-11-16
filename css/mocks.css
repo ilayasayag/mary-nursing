@@ -240,3 +240,13 @@
 .self-score .btn { flex: 1 1 140px; }
 .warnbox.worse { border-color: var(--red); animation: mxPulse 1.6s ease-in-out 2; }
 .mxk-multi { font-weight: 800; color: var(--blue-d); margin: -4px 0 8px; }
+
+/* mistakes-only drill */
+.mx-drillall { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 10px 0 14px; }
+.mx-drillall small { font-weight: 600; opacity: .85; font-size: .78rem; }
+.mx-review .mx-drillall { margin-top: 16px; }
+.mx-only { display: block; font-size: .76rem; font-weight: 700; color: var(--green-d, #2f9e44); margin-top: 2px; }
+.mx-rv-link.old { opacity: .82; }
+.mx-rv-link.old em { color: var(--muted, #888); }
+.mx-dtag { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .02em; padding: 3px 9px; border-radius: 99px; background: var(--chip, #eef3ff); color: var(--blue-d, #1c64d1); margin-bottom: 4px; }
+.mx-oldrv p { line-height: 1.55; }
