@@ -250,3 +250,15 @@
 .mx-rv-link.old em { color: var(--muted, #888); }
 .mx-dtag { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .02em; padding: 3px 9px; border-radius: 99px; background: var(--chip, #eef3ff); color: var(--blue-d, #1c64d1); margin-bottom: 4px; }
 .mx-oldrv p { line-height: 1.55; }
+
+/* Unit 10: Mary's notes */
+.mx-unit.notes-unit { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.notes-final, .notes-quick { display: flex; align-items: center; gap: 14px; text-decoration: none; border: none; position: relative; }
+.notes-final { color: #fff; background: linear-gradient(135deg, #ff6fa8, #c2378a); box-shadow: 0 5px 0 #8f2464; }
+.notes-quick { color: #4a3500; background: linear-gradient(135deg, #ffe066, #ffc800); box-shadow: 0 5px 0 var(--gold-d); }
+.notes-final img, .notes-quick img { width: 46px; height: 46px; flex: none; }
+.notes-final b, .notes-quick b { display: block; font: 700 1.1rem var(--display); }
+.notes-final span, .notes-quick span { font-weight: 700; font-size: .86rem; }
+.notes-final .go, .notes-quick .go { margin-left: auto; font: 700 1.6rem var(--display); }
+.notes-final .mx-stamp.mini { position: static; display: inline-block; margin-top: 4px; transform: none; color: #fff; border-color: #fff; background: rgba(255,255,255,.18); }
+.mx-notesnote { background: rgba(255, 111, 168, .14); border: 2px solid rgba(255, 111, 168, .45); color: inherit; border-radius: 14px; padding: 10px 12px; line-height: 1.5; text-align: left; }

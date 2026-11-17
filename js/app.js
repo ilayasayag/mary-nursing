@@ -412,6 +412,7 @@
   const SOURCE = new Proxy({}, { get: (_, m) =>
     m === 'law' ? (S.lang === 'es' ? 'Leyes israelíes y circulares del Ministerio · verificado con los textos oficiales' : 'Israeli laws and Ministry circulars · checked against the official texts')
     : m === 'emerg' ? (S.lang === 'es' ? 'SVB AHA 2025 · primeros auxilios AHA/Cruz Roja (texto 2020; la bibliografía cita ya la actualización de 2024) · verificado con las guías' : 'AHA 2025 BLS · AHA/Red Cross first aid (2020 text; the list now cites the 2024 update) · checked against the guidelines')
+    : m === 'notes' ? (S.lang === 'es' ? 'Tu cuaderno, revisado con la hoja de EPI de los CDC, la guía AHA 2025, los criterios de preeclampsia del ACOG y rangos de laboratorio estándar' : 'Your notebook, checked against the CDC PPE sheet, AHA 2025, ACOG preeclampsia criteria and standard lab ranges')
     : m === 'exam' ? (S.lang === 'es' ? 'Sesión informativa del Ministerio de Sanidad (24.10.2026), bibliografía sept-dic 2026 y guía AHA 2025' : 'Ministry of Health briefing (24.10.2026), the Sept-Dec 2026 reading list and the AHA 2025 guideline')
     /* Brunner & Suddarth 16th and Wong's 12th are searchable in Google Books; key facts were checked in their text */
     : SEARCHED[m] ? (S.lang === 'es' ? `${BOOK[m]} · datos clave verificados en el texto del libro (búsqueda de Google Books)` : `${BOOK[m]} · key facts checked in the book's text (Google Books search)`)
@@ -430,7 +431,7 @@
       .replace(/\b((?:circular|circulares|Circular|circulars)\s+\d+\/\d{2,4}(?:\s*(?:,|y|and)\s*\d+\/\d{2,4})*)/g, '<span class="ref">$1</span>')
       .replace(/\b(never|Never|NEVER|nunca|Nunca|NOT|NO)\b/g, '<b class="warn">$1</b>');
   }
-  const SENTENCE_SPLIT = /(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ¿¡(“])/;
+  const SENTENCE_SPLIT = /(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ¿¡(“➕⚠]|📓)/; /* ➕ ⚠ 📓 (Unit 10 markers) start their own line */
   function richText(escaped, rows = true) {
     const parts = escaped.split(SENTENCE_SPLIT);
     if (rows && parts.length >= 3 && escaped.length > 110)
@@ -867,7 +868,7 @@
     '2026-11-14': ['exam', 'mx:1', 'calc'],
     '2026-11-15': ['mx:2', 'weak', 'redlines'],
     '2026-11-16': ['mx:4', 'procs'],
-    '2026-11-17': ['cheats', 'examinfo', 'rest']
+    '2026-11-17': ['notes', 'mx:8', 'cheats', 'examinfo', 'rest']
   };
   /* Learn page banner: today's station practice from the plan */
   function todayStations() {
